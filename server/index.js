@@ -2,10 +2,21 @@ const express = require('express');
 
 const app = express();
 
-app.get('/api/greeting', (req, res) => {
-  const name = req.query.name || 'World';
-  res.setHeader('Content-Type', 'application/json');
-  res.send(JSON.stringify({ greeting: `Hello ${name}!` }));
+const lobbys = [{
+	id: '123456',
+	name: 'my game',
+	players: 0,
+	maxPlayers: 2
+}, {
+	id: '1234',
+	name: 'my other game',
+	players: 0,
+	maxPlayers: undefined
+}];
+
+app.get('/api/lobby', (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
+	res.send(JSON.stringify(lobbys));
 });
 
 const port = process.env.port || 3001;

@@ -1,0 +1,38 @@
+button {
+	padding: 5px;
+	margin: 10px;
+	background-color: lightgray;
+	border: 1px solid darkgray;
+	transition: background-color 2s, color 2s;
+}
+
+button:hover:not([disabled]) {
+	cursor: pointer;
+	color: white;
+	background-color: black;
+}
+
+.lobby-list {
+	min-height: 200px;
+	background-color: white;
+	color: black;
+}
+
+.lobby-list table {
+	width: 100%;
+	margin: 0;
+	border-spacing: 0;
+	border-collapse: collapse;
+}
+
+.lobby-list thead {
+	background-color: gray;
+}
+
+.lobby-list tbody > tr:nth-of-type(even) {
+	background-color: #f3f3f3;
+}
+
+.lobby-list tbody > tr.active {
+	background-color: lightblue;
+}
