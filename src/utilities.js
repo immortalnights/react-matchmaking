@@ -9,21 +9,21 @@ export const withLoader = (WrapperComponent, makeRequest) => {
 			data: null
 		};
 
-		request = null;
-
 		componentDidMount()
 		{
-			this.request = makeRequest(this.props.id).then(({ status, error, data }) => {
-				this.request = null;
+			return makeRequest(this.props.id)
+			.then(({ status, error, data }) => {
 				this.setState({ status, error, data });
 			});
 		}
 
 		componentWillUnmount()
 		{
-			if (this.request)
+			if (window.AbortController)
 			{
-				this.request.cancel();
+				const controller = new AbortController();
+				const signal = controller.signal;
+				controller.abort();
 			}
 		}
 
@@ -38,17 +38,18 @@ export const withLoader = (WrapperComponent, makeRequest) => {
 					content = (<h1>Connecting...</h1>);
 					break;
 				}
+				case 'OK':
+				{
+					content = (<WrapperComponent {...this.props} data={this.state.data} />);
+					break;
+				}
 				case 'ERROR':
+				default:
 				{
 					content = (<>
 						<h1>{this.state.error}</h1>
 						<A href="/">Return</A>
 					</>);
-					break;
-				}
-				default:
-				{
-					content = (<WrapperComponent {...this.props} data={this.state.data} />);
 					break;
 				}
 			}

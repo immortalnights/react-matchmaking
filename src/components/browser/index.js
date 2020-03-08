@@ -1,8 +1,9 @@
 import React from 'react';
+import { navigate } from 'hookrouter';
 import './browser.css';
 
 const LobbyRow = (props) => {
-	const playerCount = props.maxPlayers ? props.players + '/' + props.maxPlayers : props.players;
+	const playerCount = props.maxPlayers === null ? props.players : props.players + '/' + props.maxPlayers;
 
 	return (<tr className={props.active ? 'active' : ''} onClick={props.onClick.bind(null, props.id)}>
 		<td style={{textAlign: 'left'}}>{props.name}</td>
@@ -37,10 +38,8 @@ const Actions = (props) => {
 
 export default class Browser extends React.Component {
 	state = {
-		lobbys: []
+		lobbies: []
 	};
-
-	request = null;
 
 	componentDidMount()
 	{
@@ -49,53 +48,101 @@ export default class Browser extends React.Component {
 
 	componentWillUnmount()
 	{
-		if (this.request)
+		if (window.AbortController)
 		{
-			this.request.cancel();
+			const controller = new AbortController();
+			const signal = controller.signal;
+			controller.abort();
 		}
 	}
 
 	handleLobbyClick(id, event)
 	{
-		const lobbys = this.state.lobbys.map(l => {
+		const lobbies = this.state.lobbies.map(l => {
 			const wasActive = l.active;
 			return { ...l, active: false, wasActive };
 		});
-		const index = lobbys.findIndex((l) => l.id === id );
+		const index = lobbies.findIndex((l) => l.id === id );
 
 		if (index !== -1)
 		{
-			const lobby = lobbys[index];
-			lobbys[index] = { ...lobby, active: !lobby.wasActive }
+			const lobby = lobbies[index];
+			lobbies[index] = { ...lobby, active: !lobby.wasActive }
 		}
-		this.setState({ lobbys });
+		this.setState({ lobbies });
 	}
 
 	render()
 	{
-		const selection = this.state.lobbys.find(l => l.active === true);
+		const selection = this.state.lobbies.find(l => l.active === true);
 
 		const clickHandlers = {
-			onRefreshClick: () => { this.makeRequest(); },
-			onJoinClick: (id) => { console.log("onJoinClick", id); },
-			onCreateClick: () => { console.log("onCreateClick"); },
+			onRefreshClick: () => this.makeRequest(),
+			onJoinClick: (id) => this.handleJoinClick(),
+			onCreateClick: () => this.handleCreateClick(),
 		}
 
 		return (<>
 			<h1>Lobby Browser</h1>
-			<LobbyList list={this.state.lobbys} onClick={this.handleLobbyClick.bind(this)} />
+			<LobbyList list={this.state.lobbies} onClick={this.handleLobbyClick.bind(this)} />
 			<Actions selection={selection ? selection.id : null} {...clickHandlers} />
 		</>);
 	}
 
+	handleJoinClick()
+	{
+		const lobby = this.state.lobbies.find(l => l.active === true);
+
+		if (lobby)
+		{
+			navigate('/Lobby/' + encodeURIComponent(lobby.id));
+		}
+	}
+
+	handleCreateClick()
+	{
+		return fetch('/api/lobby/', { method: 'post' })
+		.then((response) => {
+			// this.request = null;
+
+			if (response.ok)
+			{
+				response.json().then(lobby => {
+					const lobbies = [...this.state.lobbies];
+					lobbies.push(lobby);
+					this.setState({ lobbies: lobbies });
+
+					// move the player into thier lobby
+					navigate('/Lobby/' + encodeURIComponent(lobby.id));
+				});
+			}
+		});
+	}
+
 	makeRequest()
 	{
-		this.request = fetch('/api/lobby/').then((response) => {
+		return fetch('/api/lobby/')
+		.then((response) => {
 			this.request = null;
 
-			response.json().then((data) => {
-				this.setState({ lobbys: data });
-			});
+			if (response.ok)
+			{
+				response.json().then((data) => {
+					const lobbies = this.state.lobbies;
+					const newLobbies = data.map((lobby) => {
+						const existing = lobbies.find((l) => l.id === lobby.id );
+
+						const merged = {...existing};
+						Object.keys(lobby).forEach((key) => {
+							merged[key] = lobby[key];
+						});
+
+						return merged;
+					});
+
+					this.setState({ lobbies: newLobbies });
+				});
+			}
 		});
 	}
 }

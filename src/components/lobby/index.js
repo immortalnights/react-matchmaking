@@ -10,19 +10,30 @@ export class Lobby extends React.Component {
 
 const LobbyWithLoader = withLoader(Lobby, (id) => {
 	return fetch('/api/lobby/' + id).then((response) => {
-		const data = { status: 'ERROR', error: '', data: null };
-
+		let r;
 		if (response.ok)
 		{
-			data.status = 'IN_LOBBY';
-			data.data = response.responseJSON;
+			r = response.json();
 		}
 		else
 		{
-			data.error = "Failed to load game lobby.";
+			const contentType = response.headers.get('content-type');
+			console.log("contentType", contentType);
+			if (contentType.includes('application/json'))
+			{
+				r = response.json().then(json => { return new Promise((resolve, reject) => { reject(json) }) });
+			}
+			else
+			{
+				r = new Promise((resolve, reject) => { reject({ error: "Failed to load game lobby." });});
+			}
 		}
 
-		return data;
+		return r;
+	}).then(data => {
+		return { status: 'OK', error: null, data: data };
+	}).catch(data => {
+		return { status: 'ERROR', error: data.error, data: null };
 	});
 });
 

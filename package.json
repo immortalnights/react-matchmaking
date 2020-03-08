@@ -9,14 +9,15 @@
     "hookrouter": "^1.2.3",
     "react": "^16.13.0",
     "react-dom": "^16.13.0",
-    "react-scripts": "3.4.0"
+    "react-scripts": "3.4.0",
+    "uuid": "^7.0.2"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server": "node-env-run server --exec nodemon",
+    "server": "node-env-run server --exec nodemon server",
     "dev": "run-p server start"
   },
   "proxy": "http://127.0.0.1:3001",
