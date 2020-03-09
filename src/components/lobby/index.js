@@ -1,10 +1,11 @@
 import React from 'react';
-import { withLoader } from '../../utilities';
+import { withLoader } from '../../utilities/withloader';
+import Provider from './provider';
 
 export class Lobby extends React.Component {
 	render()
 	{
-		return (<h1>In lobby</h1>);
+		return (<Provider><h1>In lobby</h1></Provider>);
 	}
 }
 

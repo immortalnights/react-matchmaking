@@ -1,5 +1,5 @@
 import React from 'react';
-import { withLoader } from '../../utilities';
+import { withLoader } from '../../utilities/withloader';
 
 class Game extends React.Component {
 	render()
