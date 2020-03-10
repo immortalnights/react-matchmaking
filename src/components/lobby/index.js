@@ -3,6 +3,11 @@ import { withLoader } from '../../utilities/withloader';
 import Provider from './provider';
 
 export class Lobby extends React.Component {
+	constructor()
+	{
+		super();
+	}
+
 	render()
 	{
 		return (<Provider><h1>In lobby</h1></Provider>);

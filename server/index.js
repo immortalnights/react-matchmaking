@@ -1,13 +1,16 @@
-const express = require('express');
-const uuid = require('uuid').v1;
+const app = require('express')();
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
+const Lobby = require('./lobby');
 
-const prettify = true;
-const app = express();
+const PRETTIFY_JSON_RESPONSES = true;
+
+io.set('transports', ['websocket']);
 
 const lobbies = [];
 
 const sendJSONReply = function(res, json, status = 200) {
-	if (prettify)
+	if (PRETTIFY_JSON_RESPONSES)
 	{
 		res.setHeader('Content-Type', 'application/json');
 		res.status(status).send(JSON.stringify(json, null, 4));
@@ -25,7 +28,7 @@ app.get('/api/lobby/:id?', (req, res) => {
 		const lobby = lobbies.find((l) => l.id === lobbyId);
 		if (lobby)
 		{
-			sendJSONReply(res, lobby);
+			sendJSONReply(res, lobby.serialize());
 		}
 		else
 		{
@@ -34,27 +37,23 @@ app.get('/api/lobby/:id?', (req, res) => {
 	}
 	else
 	{
-		sendJSONReply(res, lobbies);
+		sendJSONReply(res, lobbies.map(lobby => lobby.serialize()));
 	}
 });
 
 app.post('/api/lobby', (req, res) => {
 	res.setHeader('Content-Type', 'application/json');
 
-	const lobby = {
-		id: uuid(),
-		name: 'unnamed',
-		players: 0,
-		maxPlayers: null
-	};
+	const lobby = new Lobby({ io });
 
 	lobbies.push(lobby);
 
-	res.send(JSON.stringify(lobby));
+	res.send(JSON.stringify(lobby.serialize()));
 });
 
 const port = process.env.port || 3001;
-app.listen(port, () => {
-		console.log(`Express server is running on localhost:${port}`);
-	}
-);
+server.listen(port, () => { console.log("OK"); });
+// app.listen(port, () => {
+// 		console.log(`Express server is running on localhost:${port}`);
+// 	}
+// );
