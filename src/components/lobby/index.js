@@ -1,17 +1,53 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { withLoader } from '../../utilities/withloader';
+import Context from './context';
 import Provider from './provider';
 
+const PlayerListItem = (props) => {
+	return (<div>props.id</div>);
+}
+
+const PlayerList = (props) => {
+	const ctx = useContext(Context);
+	return ctx.players.map((player) => (<PlayerListItem key={player.id} />));
+}
+
 export class Lobby extends React.Component {
-	constructor()
-	{
-		super();
-	}
+	static contextType = Context
 
 	render()
 	{
-		return (<Provider><h1>In lobby</h1></Provider>);
+		const state = this.context.state;
+		console.log("state", state);
+
+		let content = null;
+		switch (state)
+		{
+			case 'CONNECTING':
+			{
+				content = (<h2>Connecting...</h2>);
+				break;
+			}
+			default:
+			{
+
+				break;
+			}
+		}
+
+		return (
+			<div>
+				{content}
+			</div>);
 	}
+};
+
+const LobbyX = (props) => {
+	return (<Lobby {...props} />);
+}
+
+const Wrapper = (props) => {
+	return (<Context.Consumer><LobbyX {...props} /></Context.Consumer>);
 }
 
 const LobbyWithLoader = withLoader(Lobby, (id) => {
@@ -43,4 +79,6 @@ const LobbyWithLoader = withLoader(Lobby, (id) => {
 	});
 });
 
-export default LobbyWithLoader;
+export default (props) => {
+	return (<Provider><LobbyWithLoader {...props} /></Provider>);
+};

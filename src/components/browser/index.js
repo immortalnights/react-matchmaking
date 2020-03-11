@@ -3,7 +3,7 @@ import { navigate } from 'hookrouter';
 import './browser.css';
 
 const LobbyRow = (props) => {
-	const playerCount = props.maxPlayers === null ? props.players : props.players + '/' + props.maxPlayers;
+	const playerCount = props.maxPlayers === null ? props.players.length : props.players.length + '/' + props.maxPlayers;
 
 	return (<tr className={props.active ? 'active' : ''} onClick={props.onClick.bind(null, props.id)}>
 		<td style={{textAlign: 'left'}}>{props.name}</td>
