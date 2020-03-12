@@ -5,6 +5,7 @@ import { useRoutes } from 'hookrouter';
 import LobbyBrowser from './components/browser/';
 import LobbyWithLoader from './components/lobby/';
 import GameWithLoader from './components/game/';
+import io from 'socket.io-client';
 
 const routes = {
 	'/': () => (<LobbyBrowser />),

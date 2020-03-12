@@ -36,3 +36,6 @@ button:hover:not([disabled]) {
 .lobby-list tbody > tr.active {
 	background-color: lightblue;
 }
+.lobby-list tbody > tr {
+	cursor: pointer;
+}

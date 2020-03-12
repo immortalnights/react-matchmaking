@@ -44,6 +44,10 @@ export default class Browser extends React.Component {
 	componentDidMount()
 	{
 		this.makeRequest();
+
+		this.poll = window.setInterval(() => {
+			this.makeRequest();
+		}, 1000);
 	}
 
 	componentWillUnmount()
@@ -53,6 +57,11 @@ export default class Browser extends React.Component {
 			const controller = new AbortController();
 			const signal = controller.signal;
 			controller.abort();
+		}
+
+		if (this.poll)
+		{
+			window.clearInterval(this.poll);
 		}
 	}
 

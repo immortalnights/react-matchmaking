@@ -1,7 +1,9 @@
 import React, { useContext } from 'react';
+import { A } from 'hookrouter';
 import { withLoader } from '../../utilities/withloader';
 import Context from './context';
 import Provider from './provider';
+import io from 'socket.io-client';
 
 const PlayerListItem = (props) => {
 	return (<div>props.id</div>);
@@ -28,9 +30,17 @@ export class Lobby extends React.Component {
 				content = (<h2>Connecting...</h2>);
 				break;
 			}
+			case 'ERROR':
+			{
+				content = (<>
+					<h2>{this.context.error}</h2>
+					<A href="/">Return</A>
+				</>);
+				break;
+			}
 			default:
 			{
-
+				content = (<h2>Players {this.context.lobby.players.length}</h2>);
 				break;
 			}
 		}
@@ -41,14 +51,6 @@ export class Lobby extends React.Component {
 			</div>);
 	}
 };
-
-const LobbyX = (props) => {
-	return (<Lobby {...props} />);
-}
-
-const Wrapper = (props) => {
-	return (<Context.Consumer><LobbyX {...props} /></Context.Consumer>);
-}
 
 const LobbyWithLoader = withLoader(Lobby, (id) => {
 	return fetch('/api/lobby/' + id).then((response) => {
@@ -80,5 +82,5 @@ const LobbyWithLoader = withLoader(Lobby, (id) => {
 });
 
 export default (props) => {
-	return (<Provider><LobbyWithLoader {...props} /></Provider>);
+	return (<Provider {...props} ><LobbyWithLoader {...props} /></Provider>);
 };

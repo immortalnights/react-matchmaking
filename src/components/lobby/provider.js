@@ -1,44 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import Context from './context.js';
 import io from 'socket.io-client';
-// import { initSockets } from '../../utilities/socketio';
+// import { initSockets } from './socket';
 
-const initSockets = ({ socket, setValue }) => {
-	console.log("binding socket events");
-	socket.on('lobby', ({ id, ...msg }) => {
-		console.log("got lobby", msg);
-		setValue((state) => { return { ...state, lobby: id, state: 'IN_LOBBY' }; });
-	});
-	socket.on('message', () => {
-		console.log("received message");
-	});
-};
+class SocketProvider extends React.Component
+{
+	constructor(props)
+	{
+		super(props);
 
-const SocketProvider = (props) => {
-	console.log("Render provider!");
-	const socket = io(':3001/lobby', {
-		autoConnect: false,
-		transports: ['websocket']
-	});
+		this.socket = io(':3001/lobby', {
+			autoConnect: false,
+			transports: ['websocket'],
+			query: 'lobby=' + props.id
+		});
 
-	const [value, setValue] = useState({
-		// defaults
-		state: 'CONNECTING',
-		lobby: null,
-		players: []
-	});
+		this.socket.on('error', (error) => {
+			console.log("received error", error);
+			this.socket.close();
+			this.setState(state => { return { ...state, lobby: null, error: error, state: 'ERROR' }; });
+		});
 
-	console.log("defaults", value);
+		this.socket.on('lobby:update', lobby => {
+			console.log("got lobby", lobby);
+			this.setState(state => { return { ...state, lobby: lobby, state: 'IN_LOBBY' }; });
+		});
 
-	useEffect(() => initSockets({ socket, setValue }), [initSockets]);
+		this.socket.on('lobby:player:joined', player => {
+			console.log("player joined");
+			this.setState(state => {
+				state = { ...state };
+				state.lobby = { ...state.lobby };
+				state.lobby.players = [ ...state.lobby.players, player ];
+				return state;
+			});
+		});
 
-	socket.open();
+		this.socket.on('lobby:player:left', player => {
+			console.log("player left");
+			this.setState(state => {
+				state = { ...state };
+				state.lobby = { ...state.lobby };
 
-	return(
-		<Context.Provider value={ value }>
-			{ props.children }
-		</Context.Provider>
-	)
+				const index = state.lobby.players.find(p => p.id === player.id);
+				if (index !== -1)
+				{
+					state.lobby.players = state.lobby.players.splice(index, 1);
+				}
+
+				return state;
+			});
+		});
+
+		console.log("binding");
+		this.socket.on('message', ({ id }) => {
+			console.log("received message", Date(), id);
+		});
+
+		this.state = {
+			state: 'CONNECTING',
+			lobby: null
+		};
+	}
+
+	componentDidMount()
+	{
+		this.socket.open();
+	}
+
+	componentWillUnmount()
+	{
+		this.socket.close();
+	}
+
+	render()
+	{
+		console.log("Render provider!");
+
+		return (
+			<Context.Provider value={ this.state }>
+				{ this.props.children }
+			</Context.Provider>
+		);
+	}
 };
 
 export default SocketProvider;
