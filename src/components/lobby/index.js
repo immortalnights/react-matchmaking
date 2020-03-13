@@ -6,12 +6,12 @@ import Provider from './provider';
 import io from 'socket.io-client';
 
 const PlayerListItem = (props) => {
-	return (<div>props.id</div>);
+	const readyState = props.ready ? "Ready" : "Not Ready";
+	return (<div>Player {props.index} - {readyState}</div>);
 }
 
 const PlayerList = (props) => {
-	const ctx = useContext(Context);
-	return ctx.players.map((player) => (<PlayerListItem key={player.id} />));
+	return props.players.map((player, index) => (<PlayerListItem key={player.id} {...player} index={index+1} />));
 }
 
 export class Lobby extends React.Component {
@@ -40,7 +40,16 @@ export class Lobby extends React.Component {
 			}
 			default:
 			{
-				content = (<h2>Players {this.context.lobby.players.length}</h2>);
+				content = (
+					<>
+						<h2>Lobby {this.context.lobby.name}</h2>
+						<PlayerList players={this.context.lobby.players} />
+						<div>
+							<A href="/">Leave</A>
+							<button name="ready" onClick={this.onReadyClick.bind(this)}>Ready</button>
+						</div>
+					</>
+				);
 				break;
 			}
 		}
@@ -48,7 +57,13 @@ export class Lobby extends React.Component {
 		return (
 			<div>
 				{content}
-			</div>);
+			</div>
+		);
+	}
+
+	onReadyClick()
+	{
+		this.context.emit('lobby:toggleReady');
 	}
 };
 

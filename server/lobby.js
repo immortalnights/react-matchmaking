@@ -33,6 +33,12 @@ module.exports = class Lobby {
 		}
 	}
 
+	toggleReady(player)
+	{
+		player.ready = !player.ready;
+		this.broadcast('lobby:player:update', player.serialize());
+	}
+
 	broadcast(name, data)
 	{
 		this.io.to(this.id).emit(name, data);

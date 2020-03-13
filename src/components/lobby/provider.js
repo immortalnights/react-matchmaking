@@ -36,13 +36,31 @@ class SocketProvider extends React.Component
 			});
 		});
 
+		this.socket.on('lobby:player:update', player => {
+			console.log("player updated", player);
+			this.setState(state => {
+				state = { ...state };
+				state.lobby = { ...state.lobby };
+
+				const index = state.lobby.players.findIndex(p => p.id === player.id);
+				if (index !== -1)
+				{
+					state.lobby.players[index] = { ...state.lobby.players[index], ...player };
+				}
+
+				console.log(state);
+
+				return state;
+			});
+		});
+
 		this.socket.on('lobby:player:left', player => {
 			console.log("player left");
 			this.setState(state => {
 				state = { ...state };
 				state.lobby = { ...state.lobby };
 
-				const index = state.lobby.players.find(p => p.id === player.id);
+				const index = state.lobby.players.findIndex(p => p.id === player.id);
 				if (index !== -1)
 				{
 					state.lobby.players = state.lobby.players.splice(index, 1);
@@ -59,8 +77,14 @@ class SocketProvider extends React.Component
 
 		this.state = {
 			state: 'CONNECTING',
-			lobby: null
+			lobby: null,
+			emit: this.handleEmit.bind(this)
 		};
+	}
+
+	handleEmit(name, data)
+	{
+		this.socket.emit(name, data);
 	}
 
 	componentDidMount()

@@ -26,11 +26,12 @@ class Player {
 	{
 		this.id = uuid();
 		this.io = client;
+		this.ready = false;
 	}
 
 	serialize()
 	{
-		return { id: this.id };
+		return { id: this.id, ready: this.ready };
 	}
 };
 
@@ -101,6 +102,10 @@ io.of('/lobby').on('connection', (client) => {
 	{
 		const player = new Player(client);
 		lobby.handleJoin(player);
+
+		player.io.on('lobby:toggleReady', () => {
+			lobby.toggleReady(player);
+		});
 
 		player.io.on('disconnect', () => {
 			const lobby = lobbies.find(l => !!l.players.find(p => p.id === player.id));
