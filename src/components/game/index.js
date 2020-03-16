@@ -19,7 +19,7 @@ const GameWithLoader = withLoader(Game, (id) => {
 		}
 		else
 		{
-			data.error = "Failed to load game lobby.";
+			data.error = "Failed to load game.";
 		}
 
 		return data;

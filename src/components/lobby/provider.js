@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { navigate } from 'hookrouter';
 import Context from './context.js';
 import io from 'socket.io-client';
 // import { initSockets } from './socket';
@@ -48,10 +49,12 @@ class SocketProvider extends React.Component
 					state.lobby.players[index] = { ...state.lobby.players[index], ...player };
 				}
 
-				console.log(state);
-
 				return state;
 			});
+		});
+
+		this.socket.on('lobby:game', game => {
+			navigate('/Game/' + game.id);
 		});
 
 		this.socket.on('lobby:player:left', player => {

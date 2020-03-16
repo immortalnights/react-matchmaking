@@ -9,6 +9,7 @@ const PRETTIFY_JSON_RESPONSES = true;
 io.set('transports', ['websocket']);
 
 const lobbies = [];
+const games = [];
 
 // class LobbyManager {
 // 	constructor()
@@ -34,6 +35,21 @@ class Player {
 		return { id: this.id, ready: this.ready };
 	}
 };
+
+class Game {
+	constructor({ io })
+	{
+		this.id = uuid();
+		this.io = io.of('/game');
+		this.status = 'PENDING';
+	}
+}
+
+const createGame = () => {
+	const game = new Game({ io });
+	games.push(game);
+	return game;
+}
 
 const sendJSONReply = function(res, json, status = 200) {
 	if (PRETTIFY_JSON_RESPONSES)
@@ -70,7 +86,7 @@ app.get('/api/lobby/:id?', (req, res) => {
 app.post('/api/lobby', (req, res) => {
 	res.setHeader('Content-Type', 'application/json');
 
-	const lobby = new Lobby({ io });
+	const lobby = new Lobby({ io, createGame: createGame });
 
 	lobbies.push(lobby);
 
@@ -104,15 +120,11 @@ io.of('/lobby').on('connection', (client) => {
 		lobby.handleJoin(player);
 
 		player.io.on('lobby:toggleReady', () => {
-			lobby.toggleReady(player);
+			lobby.toggleReady(player.id);
 		});
 
 		player.io.on('disconnect', () => {
-			const lobby = lobbies.find(l => !!l.players.find(p => p.id === player.id));
-			if (lobby)
-			{
-				lobby.handleLeave(player);
-			}
+			lobby.handleLeave(player.id);
 
 			console.log(`client '${client.id}' disconnected`);
 		});
