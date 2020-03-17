@@ -10,7 +10,7 @@ module.exports = class Lobby {
 		this.players = [];
 		this.maxPlayers = null;
 		this.status = 'PENDING';
-		this.timer = 0;
+		this.countdown = 0;
 		this.timeout = null;
 		this.gameId = undefined;
 		this.callbacks = {
@@ -57,28 +57,31 @@ module.exports = class Lobby {
 		{
 			console.log("all players are ready");
 			this.status = 'STARTING';
-			this.countdown();
+			this.beginCountdown();
 		}
 		else
 		{
 			this.status = 'PENDING';
+			this.countdown = 0;
 			if (this.timeout)
 			{
 				clearTimeout(this.timeout);
 			}
+
+			this.broadcast('lobby:update', this.serialize());
 		}
 	}
 
-	countdown()
+	beginCountdown()
 	{
 		let time = Date.now();
 
 		const tick = () => {
-			this.timer = (5000 - (Date.now() - time));
+			this.timeToStart = (5000 - (Date.now() - time));
 
-			if (this.timer < 0)
+			if (this.timeToStart < 0)
 			{
-				this.timer = 0;
+				this.timeToStart = 0;
 				this.status = 'READY';
 				this.timeout = null;
 			}
@@ -112,7 +115,7 @@ module.exports = class Lobby {
 			players: this.players.map((p) => p.serialize()),
 			maxPlayers: this.maxPlayers,
 			status: this.status,
-			timer: this.timer,
+			countdown: this.timeToStart,
 			gameId: this.gameId
 		};
 	}

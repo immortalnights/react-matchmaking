@@ -43,6 +43,14 @@ class Game {
 		this.io = io.of('/game');
 		this.status = 'PENDING';
 	}
+
+	serialize()
+	{
+		return {
+			id: this.id,
+			status: this.status
+		};
+	}
 }
 
 const createGame = () => {
@@ -93,26 +101,48 @@ app.post('/api/lobby', (req, res) => {
 	res.send(JSON.stringify(lobby.serialize()));
 });
 
-io.use((socket, next) => {
+app.get('/api/Game/:id?', (req, res) => {
+	const gameID = req.params.id;
+	if (gameID)
+	{
+		const game = games.find((l) => l.id === gameID);
+		if (game)
+		{
+			sendJSONReply(res, game.serialize());
+		}
+		else
+		{
+			sendJSONReply(res, { error: `Game '${gameID}' not found`}, 404);
+		}
+	}
+	else
+	{
+		sendJSONReply(res, { error: "Invalid request" }, 400);
+	}
+});
+
+io.of('/lobby').use((socket, next) => {
 	// console.log(socket.handshake.query);
 
-	const lobby = lobbies.find(l => l.id === socket.handshake.query.lobby);
+	const lobbyID = socket.handshake.query.lobby;
+	const lobby = lobbies.find(l => l.id === lobbyID);
 	if (lobby)
 	{
-		console.log("Lobby exists");
+		console.log(`Lobby {lobby.id} exists`);
 		next();
 	}
 	else
 	{
-		console.log("Lobby does not exist");
-		next(new Error("Lobby does not exist"));
+		console.log(`Lobby {lobbyID} does not exist`);
+		next(new Error(`Lobby {lobbyID} does not exist`));
 	}
 });
 
 io.of('/lobby').on('connection', (client) => {
 	console.log(`client ${client.id} connected`);
 
-	const lobby = lobbies.find(l => l.id === client.handshake.query.lobby);
+	const lobbyID = client.handshake.query.lobby;
+	const lobby = lobbies.find(l => l.id === lobbyID);
 
 	if (lobby)
 	{
@@ -135,6 +165,23 @@ io.of('/lobby').on('connection', (client) => {
 	}
 });
 
+io.of('/game').use((socket, next) => {
+	const gameID = socket.handshake.query.game;
+	const game = games.find(g => g.id === gameID);
+	if (game)
+	{
+		console.log(`Game {game.id} exists`);
+		next();
+	}
+	else
+	{
+		console.log(`Game {gameID} does not exist`);
+		next(new Error(`Game {gameID} does not exist`));
+	}
+});
+
+io.of('/lobby').on('connection', (client) => {
+});
 
 const port = process.env.port || 3001;
 server.listen(port, () => { console.log(`Server running on localhost:${port}`); });

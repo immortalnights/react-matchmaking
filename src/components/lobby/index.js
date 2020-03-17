@@ -40,10 +40,24 @@ export class Lobby extends React.Component {
 			}
 			default:
 			{
+				const lobby = this.context.lobby;
+
+				let status;
+				if (lobby.status === 'STARTING')
+				{
+					const seconds = (Math.ceil(lobby.countdown / 1000)).toFixed(0);
+					status = (<div>Starting in {seconds}...</div>);
+				}
+				else
+				{
+					status = (<div>Waiting for players...</div>);
+				}
+
 				content = (
 					<>
-						<h2>Lobby {this.context.lobby.name}</h2>
-						<PlayerList players={this.context.lobby.players} />
+						<h2>Lobby {lobby.name}</h2>
+						<PlayerList players={lobby.players} />
+						{status}
 						<div>
 							<A href="/">Leave</A>
 							<button name="ready" onClick={this.onReadyClick.bind(this)}>Ready</button>
