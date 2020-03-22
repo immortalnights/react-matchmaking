@@ -122,19 +122,26 @@ app.get('/api/Game/:id?', (req, res) => {
 });
 
 io.of('/lobby').use((socket, next) => {
-	// console.log(socket.handshake.query);
-
 	const lobbyID = socket.handshake.query.lobby;
 	const lobby = lobbies.find(l => l.id === lobbyID);
+
 	if (lobby)
 	{
-		console.log(`Lobby {lobby.id} exists`);
-		next();
+		if (lobby.status === 'PENDING')
+		{
+			console.log(`Lobby ${lobby.id} exists`);
+			next();
+		}
+		else
+		{
+			console.error(`Cannot join lobby, incorrect state`, lobby.status);
+			next(new Error(`Lobby ${lobbyID} is locked`));
+		}
 	}
 	else
 	{
-		console.log(`Lobby {lobbyID} does not exist`);
-		next(new Error(`Lobby {lobbyID} does not exist`));
+		console.error(`Lobby ${lobbyID} does not exist`);
+		next(new Error(`Lobby ${lobbyID} does not exist`));
 	}
 });
 
@@ -168,19 +175,21 @@ io.of('/lobby').on('connection', (client) => {
 io.of('/game').use((socket, next) => {
 	const gameID = socket.handshake.query.game;
 	const game = games.find(g => g.id === gameID);
+
 	if (game)
 	{
-		console.log(`Game {game.id} exists`);
+		console.log(`Game ${game.id} exists`);
 		next();
 	}
 	else
 	{
-		console.log(`Game {gameID} does not exist`);
-		next(new Error(`Game {gameID} does not exist`));
+		console.log(`Game ${gameID} does not exist`);
+		next(new Error(`Game ${gameID} does not exist`));
 	}
 });
 
-io.of('/lobby').on('connection', (client) => {
+io.of('/game').on('connection', (client) => {
+
 });
 
 const port = process.env.port || 3001;

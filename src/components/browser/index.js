@@ -8,7 +8,7 @@ const LobbyRow = (props) => {
 	return (<tr className={props.active ? 'active' : ''} onClick={props.onClick.bind(null, props.id)}>
 		<td style={{textAlign: 'left'}}>{props.name}</td>
 		<td>{playerCount}</td>
-		<td></td>
+		<td>{props.status}</td>
 	</tr>);
 }
 
