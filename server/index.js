@@ -94,7 +94,16 @@ app.get('/api/lobby/:id?', (req, res) => {
 app.post('/api/lobby', (req, res) => {
 	res.setHeader('Content-Type', 'application/json');
 
-	const lobby = new Lobby({ io, createGame: createGame });
+	const close = () => {
+		const index = lobbies.findIndex(l => { return l.players.length === 0; });
+		if (index !== -1)
+		{
+			let removed = lobbies.splice(index, 1);
+			removed.forEach(l => { l.close(); });
+		}
+	};
+
+	const lobby = new Lobby({ io, createGame: createGame, closeLobby: close });
 
 	lobbies.push(lobby);
 
@@ -127,7 +136,8 @@ io.of('/lobby').use((socket, next) => {
 
 	if (lobby)
 	{
-		if (lobby.status === 'PENDING')
+		console.log("join", lobby.status, lobby.isFull())
+		if (lobby.status === 'PENDING' && lobby.isFull() === false)
 		{
 			console.log(`Lobby ${lobby.id} exists`);
 			next();

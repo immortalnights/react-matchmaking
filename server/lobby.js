@@ -1,21 +1,37 @@
 const uuid = require('uuid').v1;
 
 module.exports = class Lobby {
-	constructor({ io, createGame })
+	constructor({ io, createGame, closeLobby })
 	{
 		// super();
 		this.io = io.of('/lobby');
 		this.id = uuid();
 		this.name = 'unnamed';
 		this.players = [];
-		this.maxPlayers = null;
+		this.maxPlayers = 2;
 		this.status = 'PENDING';
 		this.countdown = 0;
 		this.timeout = null;
 		this.gameId = undefined;
 		this.callbacks = {
-			createGame: createGame
+			createGame: createGame,
+			closeLobby: closeLobby
 		};
+	}
+
+	isFull()
+	{
+		return this.maxPlayers !== null && (this.players.length === this.maxPlayers);
+	}
+
+	close()
+	{
+		this.players.forEach(p => {
+			p.io.leave(this.id);
+		});
+		this.players = [];
+		this.status = 'CLOSED';
+		this.maxPlayers = 0;
 	}
 
 	handleJoin(player)
@@ -35,10 +51,17 @@ module.exports = class Lobby {
 		if (index !== -1)
 		{
 			const player = this.players[index];
+			player.io.join(this.id);
 
 			this.players.splice(index, 1);
 			this.broadcast('lobby:player:left', player.serialize());
 			console.log(`Player ${player.id} left lobby ${this.id}`);
+		}
+
+		if (this.players.length === 0)
+		{
+			this.status = 'CLOSING';
+			this.callbacks.closeLobby();
 		}
 	}
 
@@ -57,7 +80,13 @@ module.exports = class Lobby {
 		{
 			console.log("all players are ready");
 			this.status = 'STARTING';
-			this.beginCountdown();
+			this.beginCountdown().then(() => {
+				this.status = 'READY';
+				const game = this.callbacks.createGame();
+				this.broadcast('lobby:game', { id: game.id });
+			}).then(() => {
+				this.callbacks.closeLobby();
+			});
 		}
 		else
 		{
@@ -76,30 +105,29 @@ module.exports = class Lobby {
 	{
 		let time = Date.now();
 
-		const tick = () => {
-			this.timeToStart = (5000 - (Date.now() - time));
+		this.countdown = 5000;
+		const promise = new Promise((resolve, reject) => {
+			const tick = () => {
+				this.countdown = (5000 - (Date.now() - time));
 
-			if (this.timeToStart < 0)
-			{
-				this.timeToStart = 0;
-				this.status = 'READY';
-				this.timeout = null;
+				if (this.countdown < 0)
+				{
+					this.countdown = 0;
+					resolve();
+				}
+				else
+				{
+					setTimeout(tick, 250);
+				}
+
+				console.log("tick");
+				this.broadcast('lobby:update', this.serialize());
 			}
-			else
-			{
-				this.timeout = setTimeout(tick, 500);
-			}
 
-			this.broadcast('lobby:update', this.serialize());
+			tick();
+		});
 
-			if (this.status === 'READY')
-			{
-				const game = this.callbacks.createGame();
-				this.broadcast('lobby:game', { id: game.id });
-			}
-		}
-
-		tick();
+		return promise;
 	}
 
 	broadcast(name, data)
@@ -115,7 +143,7 @@ module.exports = class Lobby {
 			players: this.players.map((p) => p.serialize()),
 			maxPlayers: this.maxPlayers,
 			status: this.status,
-			countdown: this.timeToStart,
+			countdown: this.countdown,
 			gameId: this.gameId
 		};
 	}
