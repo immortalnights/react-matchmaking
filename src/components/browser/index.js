@@ -29,24 +29,36 @@ const LobbyList = (props) => {
 }
 
 const Actions = (props) => {
+
+	let onJoinClick;
+	const lobby = props.selection;
+
+	if (lobby)
+	{
+		if (lobby.maxPlayers === null || lobby.players.length < lobby.maxPlayers)
+		{
+			onJoinClick = props.onJoinClick.bind(null, props.selection.id);
+		}
+	}
+
 	return (<div>
 		<button onClick={props.onRefreshClick}>Refresh</button>
-		<button disabled={!props.selection} onClick={props.onJoinClick.bind(null, props.selection)}>Join</button>
+		<button disabled={!onJoinClick} onClick={onJoinClick}>Join</button>
 		<button onClick={props.onCreateClick}>Create</button>
 	</div>);
 }
 
-export default class Browser extends React.Component {
+class Browser extends React.Component {
 	state = {
 		lobbies: []
 	};
 
 	componentDidMount()
 	{
-		this.makeRequest();
+		this.fetchLobbies();
 
 		this.poll = window.setInterval(() => {
-			this.makeRequest();
+			this.fetchLobbies();
 		}, 1000);
 	}
 
@@ -86,7 +98,7 @@ export default class Browser extends React.Component {
 		const selection = this.state.lobbies.find(l => l.active === true);
 
 		const clickHandlers = {
-			onRefreshClick: () => this.makeRequest(),
+			onRefreshClick: () => this.fetchLobbies(),
 			onJoinClick: (id) => this.handleJoinClick(),
 			onCreateClick: () => this.handleCreateClick(),
 		}
@@ -94,7 +106,7 @@ export default class Browser extends React.Component {
 		return (<>
 			<h1>Lobby Browser</h1>
 			<LobbyList list={this.state.lobbies} onClick={this.handleLobbyClick.bind(this)} />
-			<Actions selection={selection ? selection.id : null} {...clickHandlers} />
+			<Actions selection={selection ? selection : null} {...clickHandlers} />
 		</>);
 	}
 
@@ -128,7 +140,13 @@ export default class Browser extends React.Component {
 		});
 	}
 
-	makeRequest()
+	register()
+	{
+		let r;
+		return fetch('/api/lobby/', { method: 'POST', })
+	}
+
+	fetchLobbies()
 	{
 		return fetch('/api/lobby/')
 		.then((response) => {
@@ -155,3 +173,5 @@ export default class Browser extends React.Component {
 		});
 	}
 }
+
+export default Browser;

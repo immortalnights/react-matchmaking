@@ -6,12 +6,20 @@ import Provider from './provider';
 import io from 'socket.io-client';
 
 const PlayerListItem = (props) => {
+	console.log(props);
 	const readyState = props.ready ? "Ready" : "Not Ready";
-	return (<div>Player {props.index} - {readyState}</div>);
+
+	let onClickKick;
+	if (props.isHost && props.id !== props.host)
+	{
+		onClickKick = props.onKick.bind(null, props.id);
+	}
+
+	return (<div>Player {props.index} - {readyState} - {onClickKick ? (<button onClick={onClickKick}>Kick</button>) : ''}</div>);
 }
 
 const PlayerList = (props) => {
-	return props.players.map((player, index) => (<PlayerListItem key={player.id} {...player} index={index+1} />));
+	return props.players.map((player, index) => (<PlayerListItem key={player.id} {...player} host={props.host} isHost={props.isHost} onKick={props.onKick} index={index+1} />));
 }
 
 export class Lobby extends React.Component {
@@ -53,13 +61,16 @@ export class Lobby extends React.Component {
 					status = (<div>Waiting for players...</div>);
 				}
 
+				const host = this.context.lobby.host === this.context.self.id;
+
 				content = (
 					<>
 						<h2>Lobby {lobby.name}</h2>
-						<PlayerList players={lobby.players} />
+						<PlayerList players={lobby.players} host={this.context.lobby.host} isHost={host} onKick={this.onClickKick.bind(this)} />
 						{status}
 						<div>
 							<A href="/">Leave</A>
+							{(host) ? (<button name="ready" onClick={this.onClickAddAI.bind(this)}>Add AI</button>) : ''}
 							<button name="ready" onClick={this.onReadyClick.bind(this)}>Ready</button>
 						</div>
 					</>
@@ -78,6 +89,16 @@ export class Lobby extends React.Component {
 	onReadyClick()
 	{
 		this.context.emit('lobby:toggleReady');
+	}
+
+	onClickAddAI()
+	{
+		this.context.emit('lobby:addAIOpponent');
+	}
+
+	onClickKick(playerId)
+	{
+		console.log(playerId);
 	}
 };
 

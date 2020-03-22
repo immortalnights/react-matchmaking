@@ -11,30 +11,61 @@ io.set('transports', ['websocket']);
 const lobbies = [];
 const games = [];
 
-// class LobbyManager {
-// 	constructor()
-// 	{
-// 		this.io = io.of('/lobby');
-// 		this.io.on('connection', (client) => {
-// 			console.log(`client '${client.id}' has connected`);
-
-// 	}
-// }
-
-
 class Player {
-	constructor(client)
+	constructor({ client })
 	{
 		this.id = uuid();
 		this.io = client;
 		this.ready = false;
 	}
 
+	on(name, callback)
+	{
+		let r;
+		if (this.io)
+		{
+			r = this.io.on(name, callback);
+		}
+		return r;
+	}
+
+	send(name, data)
+	{
+		let r;
+		if (this.io)
+		{
+			r = this.io.emit(name, data);
+		}
+		return r;
+	}
+
 	serialize()
 	{
-		return { id: this.id, ready: this.ready };
+		return {
+			id: this.id,
+			ready: this.ready
+		};
 	}
 };
+
+class AI extends Player
+{
+	constructor()
+	{
+		super({ client: null })
+		this.artifical = true
+		this.ready = true;
+	}
+
+	serialize()
+	{
+		return {
+			id: this.id,
+			ready: this.ready,
+			artifical: this.artifical
+		};
+	}
+}
 
 class Game {
 	constructor({ io })
@@ -95,7 +126,7 @@ app.post('/api/lobby', (req, res) => {
 	res.setHeader('Content-Type', 'application/json');
 
 	const close = () => {
-		const index = lobbies.findIndex(l => { return l.players.length === 0; });
+		const index = lobbies.findIndex(l => { return l.isEmpty(); });
 		if (index !== -1)
 		{
 			let removed = lobbies.splice(index, 1);
@@ -163,14 +194,49 @@ io.of('/lobby').on('connection', (client) => {
 
 	if (lobby)
 	{
-		const player = new Player(client);
+		const player = new Player({client});
+		// inform the player who they are
+		player.send('lobby:registered', player.serialize());
+
 		lobby.handleJoin(player);
 
-		player.io.on('lobby:toggleReady', () => {
+		player.on('lobby:addAIOpponent', () => {
+			if (lobby.host !== player.id)
+			{
+				console.error(`Player ${player.id} tried to add an AI player, but is not the host`);
+			}
+			else if (lobby.isFull())
+			{
+				console.error(`Cannot add AI player, lobby is full`);
+			}
+			else
+			{
+				const ai = new AI();
+				lobby.handleJoin(ai);
+			}
+		});
+
+		player.on('lobby:removeAIOpponent', () => {
+			// if (lobby.host !== player.id)
+			// {
+			// 	console.error(`Player ${player.id} tried to add an AI player, but is not the host`);
+			// }
+			// else if (lobby.isFull())
+			// {
+			// 	console.error(`Cannot add AI player, lobby is full`);
+			// }
+			// else
+			// {
+			// 	const ai = new AI();
+			// 	lobby.handleJoin(ai);
+			// }
+		});
+
+		player.on('lobby:toggleReady', () => {
 			lobby.toggleReady(player.id);
 		});
 
-		player.io.on('disconnect', () => {
+		player.on('disconnect', () => {
 			lobby.handleLeave(player.id);
 
 			console.log(`client '${client.id}' disconnected`);

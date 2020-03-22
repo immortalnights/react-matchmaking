@@ -9,6 +9,7 @@ module.exports = class Lobby {
 		this.name = 'unnamed';
 		this.players = [];
 		this.maxPlayers = 2;
+		this.host = null;
 		this.status = 'PENDING';
 		this.countdown = 0;
 		this.timeout = null;
@@ -19,6 +20,11 @@ module.exports = class Lobby {
 		};
 	}
 
+	isEmpty()
+	{
+		return this.players.length === 0 || this.players.every(p => p.artifical);
+	}
+
 	isFull()
 	{
 		return this.maxPlayers !== null && (this.players.length === this.maxPlayers);
@@ -27,7 +33,10 @@ module.exports = class Lobby {
 	close()
 	{
 		this.players.forEach(p => {
-			p.io.leave(this.id);
+			if (p.artifical !== false)
+			{
+				p.io.leave(this.id);
+			}
 		});
 		this.players = [];
 		this.status = 'CLOSED';
@@ -38,10 +47,20 @@ module.exports = class Lobby {
 	{
 		this.broadcast('lobby:player:joined', player.serialize());
 
-		player.io.join(this.id);
+		// join the socket room
+		if (!player.artifical)
+		{
+			player.io.join(this.id);
+		}
+
+		if (!this.host && !player.artifical)
+		{
+			this.host = player.id;
+		}
+
 		this.players.push(player);
 
-		player.io.emit('lobby:update', this.serialize());
+		player.send('lobby:update', this.serialize());
 		console.log(`Player ${player.id} joined lobby ${this.id}`);
 	}
 
@@ -51,14 +70,17 @@ module.exports = class Lobby {
 		if (index !== -1)
 		{
 			const player = this.players[index];
-			player.io.join(this.id);
+			if (!player.artifical)
+			{
+				player.io.leave(this.id);
+			}
 
 			this.players.splice(index, 1);
 			this.broadcast('lobby:player:left', player.serialize());
 			console.log(`Player ${player.id} left lobby ${this.id}`);
 		}
 
-		if (this.players.length === 0)
+		if (this.isEmpty())
 		{
 			this.status = 'CLOSING';
 			this.callbacks.closeLobby();
@@ -76,7 +98,7 @@ module.exports = class Lobby {
 			this.broadcast('lobby:player:update', player.serialize());
 		}
 
-		if (this.players.every(p => p.ready))
+		if (this.players.length > 1 && this.players.every(p => p.ready))
 		{
 			console.log("all players are ready");
 			this.status = 'STARTING';
@@ -120,7 +142,6 @@ module.exports = class Lobby {
 					setTimeout(tick, 250);
 				}
 
-				console.log("tick");
 				this.broadcast('lobby:update', this.serialize());
 			}
 
@@ -142,6 +163,7 @@ module.exports = class Lobby {
 			name: this.name,
 			players: this.players.map((p) => p.serialize()),
 			maxPlayers: this.maxPlayers,
+			host: this.host,
 			status: this.status,
 			countdown: this.countdown,
 			gameId: this.gameId

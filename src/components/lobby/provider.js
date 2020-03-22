@@ -22,6 +22,12 @@ class SocketProvider extends React.Component
 			this.setState(state => { return { ...state, lobby: null, error: error, state: 'ERROR' }; });
 		});
 
+		this.socket.on('lobby:registered', player => {
+			console.info("self", player.id);
+			this.setState(state => {
+				return { ...state, self: player };
+			});
+		});
 		this.socket.on('lobby:update', lobby => {
 			console.log("got lobby", lobby);
 			this.setState(state => { return { ...state, lobby: lobby, state: 'IN_LOBBY' }; });
