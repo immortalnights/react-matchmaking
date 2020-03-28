@@ -1,7 +1,7 @@
 const uuid = require('uuid').v1;
 
 module.exports = class Lobby {
-	constructor({ io, createGame, closeLobby })
+	constructor({ io, host, createGame, closeLobby })
 	{
 		// super();
 		this.io = io.of('/lobby');
@@ -9,7 +9,7 @@ module.exports = class Lobby {
 		this.name = 'unnamed';
 		this.players = [];
 		this.maxPlayers = 2;
-		this.host = null;
+		this.host = host;
 		this.status = 'PENDING';
 		this.countdown = 0;
 		this.timeout = null;
@@ -33,10 +33,7 @@ module.exports = class Lobby {
 	close()
 	{
 		this.players.forEach(p => {
-			if (p.artifical !== false)
-			{
-				p.io.leave(this.id);
-			}
+			p.io.leave(this.id);
 		});
 		this.players = [];
 		this.status = 'CLOSED';
@@ -48,15 +45,7 @@ module.exports = class Lobby {
 		this.broadcast('lobby:player:joined', player.serialize());
 
 		// join the socket room
-		if (!player.artifical)
-		{
-			player.io.join(this.id);
-		}
-
-		if (!this.host && !player.artifical)
-		{
-			this.host = player.id;
-		}
+		player.io.join(this.id);
 
 		this.players.push(player);
 
@@ -70,14 +59,19 @@ module.exports = class Lobby {
 		if (index !== -1)
 		{
 			const player = this.players[index];
-			if (!player.artifical)
-			{
-				player.io.leave(this.id);
-			}
+			player.io.leave(this.id);
 
 			this.players.splice(index, 1);
 			this.broadcast('lobby:player:left', player.serialize());
 			console.log(`Player ${player.id} left lobby ${this.id}`);
+
+			if (this.players.length <= 1)
+			{
+				this.players.forEach(p => {
+					p.ready = false;
+					this.broadcast('lobby:player:update', p.serialize());
+				});
+			}
 		}
 
 		if (this.isEmpty())
@@ -102,12 +96,21 @@ module.exports = class Lobby {
 		{
 			console.log("all players are ready");
 			this.status = 'STARTING';
-			this.beginCountdown().then(() => {
-				this.status = 'READY';
-				const game = this.callbacks.createGame();
-				this.broadcast('lobby:game', { id: game.id });
+			this.beginCountdown(() => {
+				return (this.players.length > 1 && this.players.every(p => p.ready))
 			}).then(() => {
-				this.callbacks.closeLobby();
+				if (this.players.length > 1 && this.players.every(p => p.ready))
+				{
+					this.status = 'READY';
+					const game = this.callbacks.createGame({ lobby: this });
+					this.broadcast('lobby:game', { id: game.id });
+					this.callbacks.closeLobby();
+				}
+				else
+				{
+					this.status = 'PENDING';
+					this.broadcast('lobby:update', this.serialize());
+				}
 			});
 		}
 		else
@@ -123,23 +126,29 @@ module.exports = class Lobby {
 		}
 	}
 
-	beginCountdown()
+	beginCountdown(check)
 	{
 		let time = Date.now();
 
-		this.countdown = 5000;
+		const DURATION = 3000;
+
+		this.countdown = DURATION;
 		const promise = new Promise((resolve, reject) => {
 			const tick = () => {
-				this.countdown = (5000 - (Date.now() - time));
+				this.countdown = (DURATION - (Date.now() - time));
 
 				if (this.countdown < 0)
 				{
 					this.countdown = 0;
 					resolve();
 				}
-				else
+				else if (check())
 				{
 					setTimeout(tick, 250);
+				}
+				else
+				{
+					this.status = 'PENDING';
 				}
 
 				this.broadcast('lobby:update', this.serialize());

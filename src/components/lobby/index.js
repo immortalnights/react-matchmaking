@@ -12,14 +12,14 @@ const PlayerListItem = (props) => {
 	let onClickKick;
 	if (props.isHost && props.id !== props.host)
 	{
-		onClickKick = props.onKick.bind(null, props.id);
+		onClickKick = props.onCick.bind(null, props.id);
 	}
 
-	return (<div>Player {props.index} - {readyState} - {onClickKick ? (<button onClick={onClickKick}>Kick</button>) : ''}</div>);
+	return (<div>{props.id} ({props.index}) - {readyState} - {onClickKick ? (<button onClick={onClickKick}>Kick</button>) : ''}</div>);
 }
 
 const PlayerList = (props) => {
-	return props.players.map((player, index) => (<PlayerListItem key={player.id} {...player} host={props.host} isHost={props.isHost} onKick={props.onKick} index={index+1} />));
+	return props.players.map((player, index) => (<PlayerListItem key={player.id} {...player} host={props.host} isHost={props.isHost} onCick={props.onCick} index={index+1} />));
 }
 
 export class Lobby extends React.Component {
@@ -28,6 +28,7 @@ export class Lobby extends React.Component {
 	render()
 	{
 		const state = this.context.state;
+		console.log("props", this.props);
 		console.log("state", state);
 
 		let content = null;
@@ -61,12 +62,12 @@ export class Lobby extends React.Component {
 					status = (<div>Waiting for players...</div>);
 				}
 
-				const host = this.context.lobby.host === this.context.self.id;
+				const host = this.context.lobby.host === this.props.userId;
 
 				content = (
 					<>
 						<h2>Lobby {lobby.name}</h2>
-						<PlayerList players={lobby.players} host={this.context.lobby.host} isHost={host} onKick={this.onClickKick.bind(this)} />
+						<PlayerList players={lobby.players} host={this.context.lobby.host} isHost={host} onCick={this.onClickKick.bind(this)} />
 						{status}
 						<div>
 							<A href="/">Leave</A>
@@ -132,5 +133,6 @@ const LobbyWithLoader = withLoader(Lobby, (id) => {
 });
 
 export default (props) => {
+	console.log("lb", props);
 	return (<Provider {...props} ><LobbyWithLoader {...props} /></Provider>);
 };

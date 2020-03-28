@@ -2,6 +2,7 @@ const app = require('express')();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const Lobby = require('./lobby');
+const Game = require('./game');
 const uuid = require('uuid').v1;
 
 const PRETTIFY_JSON_RESPONSES = true;
@@ -12,9 +13,9 @@ const lobbies = [];
 const games = [];
 
 class Player {
-	constructor({ client })
+	constructor({ id, client })
 	{
-		this.id = uuid();
+		this.id = id;
 		this.io = client;
 		this.ready = false;
 	}
@@ -48,11 +49,36 @@ class Player {
 	}
 };
 
+
+class AIEventIO
+{
+	on()
+	{
+		// Handle game event
+	}
+
+	emit()
+	{
+		// Send game event
+	}
+
+	join()
+	{
+		// No-op for AI players
+	}
+
+	leave()
+	{
+		// No-op for AI players
+	}
+};
+
 class AI extends Player
 {
 	constructor()
 	{
-		super({ client: null })
+		super({ client: null });
+		this.io = new AIEventIO();
 		this.artifical = true
 		this.ready = true;
 	}
@@ -67,25 +93,10 @@ class AI extends Player
 	}
 }
 
-class Game {
-	constructor({ io })
-	{
-		this.id = uuid();
-		this.io = io.of('/game');
-		this.status = 'PENDING';
-	}
+const createGame = ({ lobby }) => {
+	console.assert(lobby);
 
-	serialize()
-	{
-		return {
-			id: this.id,
-			status: this.status
-		};
-	}
-}
-
-const createGame = () => {
-	const game = new Game({ io });
+	const game = new Game({ io, players: lobby.players.map(p => p.id), host: lobby.host, closeGame: () => {} });
 	games.push(game);
 	return game;
 }
@@ -101,6 +112,10 @@ const sendJSONReply = function(res, json, status = 200) {
 		res.status(status).json(json);
 	}
 }
+
+app.put('/api/register?', (req, res) => {
+	sendJSONReply(res, { userId: uuid() });
+});
 
 app.get('/api/lobby/:id?', (req, res) => {
 	const lobbyId = req.params.id;
@@ -123,22 +138,30 @@ app.get('/api/lobby/:id?', (req, res) => {
 });
 
 app.post('/api/lobby', (req, res) => {
-	res.setHeader('Content-Type', 'application/json');
+	const userId = req.get('X-USER-ID');
+	if (!userId)
+	{
+		sendJSONReply(res, { message: "Missing user ID" }, 400);
+	}
+	else
+	{
+		res.setHeader('Content-Type', 'application/json');
 
-	const close = () => {
-		const index = lobbies.findIndex(l => { return l.isEmpty(); });
-		if (index !== -1)
-		{
-			let removed = lobbies.splice(index, 1);
-			removed.forEach(l => { l.close(); });
-		}
-	};
+		const close = () => {
+			const index = lobbies.findIndex(l => { return l.isEmpty(); });
+			if (index !== -1)
+			{
+				let removed = lobbies.splice(index, 1);
+				removed.forEach(l => { l.close(); });
+			}
+		};
 
-	const lobby = new Lobby({ io, createGame: createGame, closeLobby: close });
+		const lobby = new Lobby({ io, host: userId, createGame: createGame, closeLobby: close });
 
-	lobbies.push(lobby);
+		lobbies.push(lobby);
 
-	res.send(JSON.stringify(lobby.serialize()));
+		res.send(JSON.stringify(lobby.serialize()));
+	}
 });
 
 app.get('/api/Game/:id?', (req, res) => {
@@ -162,10 +185,21 @@ app.get('/api/Game/:id?', (req, res) => {
 });
 
 io.of('/lobby').use((socket, next) => {
+	const userID = socket.handshake.query.user;
 	const lobbyID = socket.handshake.query.lobby;
 	const lobby = lobbies.find(l => l.id === lobbyID);
 
-	if (lobby)
+	if (!userID)
+	{
+		console.error(`Missing user ID`);
+		next(new Error(`Missing user ID`));
+	}
+	else if (!lobby)
+	{
+		console.error(`Lobby ${lobbyID} does not exist`);
+		next(new Error(`Lobby ${lobbyID} does not exist`));
+	}
+	else
 	{
 		console.log("join", lobby.status, lobby.isFull())
 		if (lobby.status === 'PENDING' && lobby.isFull() === false)
@@ -179,58 +213,57 @@ io.of('/lobby').use((socket, next) => {
 			next(new Error(`Lobby ${lobbyID} is locked`));
 		}
 	}
-	else
-	{
-		console.error(`Lobby ${lobbyID} does not exist`);
-		next(new Error(`Lobby ${lobbyID} does not exist`));
-	}
 });
 
 io.of('/lobby').on('connection', (client) => {
-	console.log(`client ${client.id} connected`);
+	console.log(`client ${client.id} connected to lobby channel`);
 
+	const userID = client.handshake.query.user;
 	const lobbyID = client.handshake.query.lobby;
 	const lobby = lobbies.find(l => l.id === lobbyID);
 
 	if (lobby)
 	{
-		const player = new Player({client});
+		const player = new Player({ id: userID, client });
 		// inform the player who they are
 		player.send('lobby:registered', player.serialize());
 
 		lobby.handleJoin(player);
 
-		player.on('lobby:addAIOpponent', () => {
-			if (lobby.host !== player.id)
-			{
-				console.error(`Player ${player.id} tried to add an AI player, but is not the host`);
-			}
-			else if (lobby.isFull())
-			{
-				console.error(`Cannot add AI player, lobby is full`);
-			}
-			else
-			{
-				const ai = new AI();
-				lobby.handleJoin(ai);
-			}
-		});
+		if (lobby.host === userID)
+		{
+			player.on('lobby:addAIOpponent', () => {
+				if (lobby.host !== player.id)
+				{
+					console.error(`Player ${player.id} tried to add an AI player, but is not the host`);
+				}
+				else if (lobby.isFull())
+				{
+					console.error(`Cannot add AI player, lobby is full`);
+				}
+				else
+				{
+					const ai = new AI();
+					lobby.handleJoin(ai);
+				}
+			});
 
-		player.on('lobby:removeAIOpponent', () => {
-			// if (lobby.host !== player.id)
-			// {
-			// 	console.error(`Player ${player.id} tried to add an AI player, but is not the host`);
-			// }
-			// else if (lobby.isFull())
-			// {
-			// 	console.error(`Cannot add AI player, lobby is full`);
-			// }
-			// else
-			// {
-			// 	const ai = new AI();
-			// 	lobby.handleJoin(ai);
-			// }
-		});
+			player.on('lobby:removeAIOpponent', () => {
+				// if (lobby.host !== player.id)
+				// {
+				// 	console.error(`Player ${player.id} tried to add an AI player, but is not the host`);
+				// }
+				// else if (lobby.isFull())
+				// {
+				// 	console.error(`Cannot add AI player, lobby is full`);
+				// }
+				// else
+				// {
+				// 	const ai = new AI();
+				// 	lobby.handleJoin(ai);
+				// }
+			});
+		}
 
 		player.on('lobby:toggleReady', () => {
 			lobby.toggleReady(player.id);
@@ -239,7 +272,7 @@ io.of('/lobby').on('connection', (client) => {
 		player.on('disconnect', () => {
 			lobby.handleLeave(player.id);
 
-			console.log(`client '${client.id}' disconnected`);
+			console.log(`client '${client.id}' disconnected from lobby channel`);
 		});
 	}
 	else
@@ -249,23 +282,73 @@ io.of('/lobby').on('connection', (client) => {
 });
 
 io.of('/game').use((socket, next) => {
+	const userID = socket.handshake.query.user;
 	const gameID = socket.handshake.query.game;
 	const game = games.find(g => g.id === gameID);
 
-	if (game)
+	if (!userID)
+	{
+		console.error(`Missing user ID`);
+		next(new Error(`Missing user ID`));
+	}
+	else if (!game)
+	{
+		console.error(`Game ${gameID} does not exist`);
+		next(new Error(`Game ${gameID} does not exist`));
+	}
+	else if (!game.isAuthorized(userID))
+	{
+		console.error(`Player ${userID} is not authorized to join game ${gameID}`);
+		next(new Error(`Player ${userID} is not authorized to join game ${gameID}`));
+	}
+	else
 	{
 		console.log(`Game ${game.id} exists`);
 		next();
 	}
-	else
-	{
-		console.log(`Game ${gameID} does not exist`);
-		next(new Error(`Game ${gameID} does not exist`));
-	}
 });
 
 io.of('/game').on('connection', (client) => {
+	console.log(`client ${client.id} connected to game channel`);
 
+	const userID = client.handshake.query.user;
+	const gameID = client.handshake.query.game;
+	const game = games.find(g => g.id === gameID);
+
+	if (game)
+	{
+		const player = new Player({ id: userID, client });
+		// inform the player who they are
+		player.send('game:registered', player.serialize());
+
+		game.handleJoin(player);
+
+		// player.on('game:addAIOpponent', () => {
+		// 	if (game.host !== player.id)
+		// 	{
+		// 		console.error(`Player ${player.id} tried to add an AI player, but is not the host`);
+		// 	}
+		// 	else if (game.isFull())
+		// 	{
+		// 		console.error(`Cannot add AI player, game is full`);
+		// 	}
+		// 	else
+		// 	{
+		// 		const ai = new AI();
+		// 		game.handleJoin(ai);
+		// 	}
+		// });
+
+		player.on('disconnect', () => {
+			game.handleLeave(player.id);
+
+			console.log(`client '${client.id}' disconnected from game channel`);
+		});
+	}
+	else
+	{
+		throw new Error("Cannot connect to game");
+	}
 });
 
 const port = process.env.port || 3001;

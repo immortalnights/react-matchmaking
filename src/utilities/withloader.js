@@ -40,7 +40,7 @@ export const withLoader = (WrapperComponent, makeRequest) => {
 				}
 				case 'OK':
 				{
-					content = (<WrapperComponent {...this.props} data={this.state.data} />);
+					content = (<WrapperComponent {...this.props} {...this.state.data} />);
 					break;
 				}
 				case 'ERROR':

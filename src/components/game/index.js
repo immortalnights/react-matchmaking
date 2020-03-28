@@ -1,5 +1,8 @@
 import React from 'react';
 import { withLoader } from '../../utilities/withloader';
+import Context from './context';
+import Provider from './provider';
+import io from 'socket.io-client';
 
 class Game extends React.Component {
 	render()
@@ -26,4 +29,6 @@ const GameWithLoader = withLoader(Game, (id) => {
 	});
 });
 
-export default GameWithLoader;
+export default (props) => {
+	return (<Provider {...props} ><GameWithLoader {...props} /></Provider>);
+};

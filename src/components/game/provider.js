@@ -10,70 +10,66 @@ class SocketProvider extends React.Component
 	{
 		super(props);
 
-		this.socket = io(':3001/lobby', {
+		this.socket = io(':3001/game', {
 			autoConnect: false,
 			transports: ['websocket'],
-			query: 'user=' + props.userId + '&lobby=' + props.id
+			query: 'user=' + props.userId + '&game=' + props.id
 		});
 
 		this.socket.on('error', (error) => {
 			console.log("received error", error);
 			this.socket.close();
-			this.setState(state => { return { ...state, lobby: null, error: error, state: 'ERROR' }; });
+			this.setState(state => { return { ...state, game: null, error: error, state: 'ERROR' }; });
 		});
 
-		this.socket.on('lobby:registered', player => {
+		this.socket.on('game:registered', player => {
 			console.info("self", player.id);
 			this.setState(state => {
 				return { ...state, self: player };
 			});
 		});
 
-		this.socket.on('lobby:update', lobby => {
-			console.log("got lobby", lobby);
-			this.setState(state => { return { ...state, lobby: lobby, state: 'IN_LOBBY' }; });
+		this.socket.on('game:update', game => {
+			console.log("got game", game);
+			this.setState(state => { return { ...state, game: game, state: 'IN_GAME' }; });
 		});
 
-		this.socket.on('lobby:player:joined', player => {
+		this.socket.on('game:player:joined', player => {
 			console.log("player joined");
 			this.setState(state => {
 				state = { ...state };
-				state.lobby = { ...state.lobby };
-				state.lobby.players = [ ...state.lobby.players, player ];
+				state.game = { ...state.game };
+				state.game.players = [ ...state.game.players, player ];
 				return state;
 			});
 		});
 
-		this.socket.on('lobby:player:update', player => {
+		this.socket.on('game:player:update', player => {
 			console.log("player updated", player);
 			this.setState(state => {
 				state = { ...state };
-				state.lobby = { ...state.lobby };
+				state.game = { ...state.game };
 
-				const index = state.lobby.players.findIndex(p => p.id === player.id);
+				const index = state.game.players.findIndex(p => p.id === player.id);
 				if (index !== -1)
 				{
-					state.lobby.players[index] = { ...state.lobby.players[index], ...player };
+					state.game.players[index] = { ...state.game.players[index], ...player };
 				}
 
 				return state;
 			});
 		});
 
-		this.socket.on('lobby:game', game => {
-			navigate('/Game/' + game.id);
-		});
-
-		this.socket.on('lobby:player:left', player => {
+		this.socket.on('game:player:left', player => {
 			console.log("player left", player.id);
 			this.setState(state => {
 				state = { ...state };
-				state.lobby = { ...state.lobby };
+				state.game = { ...state.game };
 
-				const index = state.lobby.players.findIndex(p => p.id === player.id);
+				const index = state.game.players.findIndex(p => p.id === player.id);
 				if (index !== -1)
 				{
-					state.lobby.players.splice(index, 1);
+					state.game.players.splice(index, 1);
 				}
 
 				return state;
@@ -87,7 +83,7 @@ class SocketProvider extends React.Component
 
 		this.state = {
 			state: 'CONNECTING',
-			lobby: null,
+			game: null,
 			emit: this.handleEmit.bind(this)
 		};
 	}
@@ -109,7 +105,7 @@ class SocketProvider extends React.Component
 
 	render()
 	{
-		console.log("Render provider!");
+		console.log("Render Game provider!");
 
 		return (
 			<Context.Provider value={ this.state }>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { navigate } from 'hookrouter';
+import { withLoader } from '../../utilities/withloader';
 import './browser.css';
 
 const LobbyRow = (props) => {
@@ -122,7 +123,7 @@ class Browser extends React.Component {
 
 	handleCreateClick()
 	{
-		return fetch('/api/lobby/', { method: 'post' })
+		return fetch('/api/lobby/', { method: 'post', headers: { 'X-USER-ID': this.props.userId } })
 		.then((response) => {
 			// this.request = null;
 
