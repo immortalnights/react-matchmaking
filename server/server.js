@@ -11,7 +11,7 @@ const PRETTIFY_JSON_RESPONSES = true;
 module.exports = class Server {
 	constructor(options)
 	{
-		this.createGame = options.createGame ? options.createGame : () => {};
+		this.createGame = (options && options.createGame) ? options.createGame : () => {};
 		this.lobbies = [];
 		this.games = [];
 	}
