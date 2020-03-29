@@ -47,7 +47,8 @@ export const withLoader = (WrapperComponent, makeRequest) => {
 				default:
 				{
 					content = (<>
-						<h1>{this.state.error}</h1>
+						<h1>Error</h1>
+						<h2>{this.state.error}</h2>
 						<A href="/">Return</A>
 					</>);
 					break;

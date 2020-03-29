@@ -103,8 +103,15 @@ module.exports = class Lobby {
 				{
 					this.status = 'READY';
 					const game = this.callbacks.createGame({ lobby: this });
-					this.broadcast('lobby:game', { id: game.id });
-					this.callbacks.closeLobby();
+					if (game)
+					{
+						this.broadcast('lobby:game', { id: game.id });
+						this.callbacks.closeLobby();
+					}
+					else
+					{
+						console.error("Failed to create game");
+					}
 				}
 				else
 				{

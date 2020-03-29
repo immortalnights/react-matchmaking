@@ -16,7 +16,7 @@ module.exports = class Game {
 			closeGame: closeGame
 		};
 
-		console.log(`Game ${this.id} [${this.authorizedPlayers.join(',')}]`);
+		console.log(`Game ${this.id} initialized`);
 	}
 
 	isEmpty()
@@ -26,27 +26,31 @@ module.exports = class Game {
 
 	isAuthorized(playerId)
 	{
-		return !!this.authorizedPlayers.find(id => id === playerId);
+		return (this.players.length < this.maxPlayers) && !!this.authorizedPlayers.find(id => id === playerId);
 	}
 
 	handleJoin(player)
 	{
 		if (this.isAuthorized(player.id))
 		{
+			player.status = 'READY';
 			this.broadcast('game:player:joined', player.serialize());
 
 			// join the socket room
 			player.io.join(this.id);
-
-			if (!this.host && !player.artifical)
-			{
-				this.host = player.id;
-			}
-
 			this.players.push(player);
 
 			player.send('game:update', this.serialize());
+
 			console.log(`Player ${player.id} joined game ${this.id}`);
+
+			if (this.authorizedPlayers.length === this.players.length)
+			{
+				setTimeout(() => {
+					this.status = 'PLAYING';
+					this.begin();
+				});
+			}
 		}
 		else
 		{

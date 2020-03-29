@@ -17,7 +17,7 @@ const GameWithLoader = withLoader(Game, (id) => {
 
 		if (response.ok)
 		{
-			data.status = 'IN_GAME';
+			data.status = 'OK';
 			data.data = response.responseJSON;
 		}
 		else

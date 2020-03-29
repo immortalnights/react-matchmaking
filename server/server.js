@@ -4,14 +4,14 @@ const io = require('socket.io')(server);
 const Player = require('./player');
 const AI = require('./ai');
 const Lobby = require('./lobby');
-const Game = require('./noughtsandcrosses');
 const uuid = require('uuid').v1;
 
 const PRETTIFY_JSON_RESPONSES = true;
 
 module.exports = class Server {
-	constructor()
+	constructor(options)
 	{
+		this.createGame = options.createGame || () => {};
 		this.lobbies = [];
 		this.games = [];
 	}
@@ -21,15 +21,6 @@ module.exports = class Server {
 		this.initializeExpresServer();
 		this.initializeSocketServer();
 		server.listen(port, () => { console.log(`Server running on localhost:${port}`); });
-	}
-
-	createGame({ lobby })
-	{
-		console.assert(lobby);
-
-		const game = new Game({ io, players: lobby.players.map(p => p.id), host: lobby.host, closeGame: () => {} });
-		this.games.push(game);
-		return game;
 	}
 
 	initializeExpresServer()
@@ -80,6 +71,18 @@ module.exports = class Server {
 			{
 				res.setHeader('Content-Type', 'application/json');
 
+				const createGame = ({ lobby }) => {
+					console.assert(lobby);
+
+					const options = { io, players: lobby.players.map(p => p.id), host: lobby.host, closeGame: () => {} }
+					const game = this.createGame(options);
+					if (game)
+					{
+						this.games.push(game);
+					}
+					return game;
+				};
+
 				const close = () => {
 					const index = this.lobbies.findIndex(l => { return l.isEmpty(); });
 					if (index !== -1)
@@ -89,7 +92,7 @@ module.exports = class Server {
 					}
 				};
 
-				const lobby = new Lobby({ io, host: userId, createGame: this.createGame.bind(this), closeLobby: close });
+				const lobby = new Lobby({ io, host: userId, createGame, closeLobby: close });
 
 				this.lobbies.push(lobby);
 
