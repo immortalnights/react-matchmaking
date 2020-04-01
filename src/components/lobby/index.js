@@ -1,9 +1,7 @@
 import React, { useContext } from 'react';
-import { A } from 'hookrouter';
 import { withLoader } from '../../utilities/withloader';
 import Context from './context';
 import Provider from './provider';
-import io from 'socket.io-client';
 
 const PlayerListItem = (props) => {
 	console.log(props);
@@ -22,7 +20,7 @@ const PlayerList = (props) => {
 	return props.players.map((player, index) => (<PlayerListItem key={player.id} {...player} host={props.host} isHost={props.isHost} onCick={props.onCick} index={index+1} />));
 }
 
-export class Lobby extends React.Component {
+class Lobby extends React.Component {
 	static contextType = Context
 
 	render()
@@ -41,10 +39,9 @@ export class Lobby extends React.Component {
 			}
 			case 'ERROR':
 			{
-				content = (<>
+				content = (<div>
 					<h2>{this.context.error}</h2>
-					<A href="/">Return</A>
-				</>);
+				</div>);
 				break;
 			}
 			default:
@@ -65,16 +62,14 @@ export class Lobby extends React.Component {
 				const host = this.context.lobby.host === this.props.userId;
 
 				content = (
-					<>
-						<h2>Lobby {lobby.name}</h2>
+					<div>
 						<PlayerList players={lobby.players} host={this.context.lobby.host} isHost={host} onCick={this.onClickKick.bind(this)} />
-						{status}
+						<div>Status: {status}</div>
 						<div>
-							<A href="/">Leave</A>
 							{(host) ? (<button name="ready" onClick={this.onClickAddAI.bind(this)}>Add AI</button>) : ''}
 							<button name="ready" onClick={this.onReadyClick.bind(this)}>Ready</button>
 						</div>
-					</>
+					</div>
 				);
 				break;
 			}
@@ -133,6 +128,5 @@ const LobbyWithLoader = withLoader(Lobby, (id) => {
 });
 
 export default (props) => {
-	console.log("lb", props);
 	return (<Provider {...props} ><LobbyWithLoader {...props} /></Provider>);
 };

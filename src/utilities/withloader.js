@@ -46,11 +46,11 @@ export const withLoader = (WrapperComponent, makeRequest) => {
 				case 'ERROR':
 				default:
 				{
-					content = (<>
+					content = (<div>
 						<h1>Error</h1>
 						<h2>{this.state.error}</h2>
 						<A href="/">Return</A>
-					</>);
+					</div>);
 					break;
 				}
 			}

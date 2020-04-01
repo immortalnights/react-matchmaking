@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { navigate } from 'hookrouter';
-import Context from './context.js';
+import Context from './context';
 import io from 'socket.io-client';
-// import { initSockets } from './socket';
 
 class SocketProvider extends React.Component
 {
@@ -76,7 +74,6 @@ class SocketProvider extends React.Component
 			});
 		});
 
-		console.log("binding");
 		this.socket.on('message', ({ id }) => {
 			console.log("received message", Date(), id);
 		});

@@ -1,5 +1,4 @@
 import React from 'react';
-import { navigate } from 'hookrouter';
 import { withLoader } from '../../utilities/withloader';
 import './browser.css';
 
@@ -11,42 +10,6 @@ const LobbyRow = (props) => {
 		<td>{playerCount}</td>
 		<td>{props.status}</td>
 	</tr>);
-}
-
-const LobbyList = (props) => {
-	return (<div className="lobby-list">
-		<table className="">
-			<thead>
-				<tr>
-					<th style={{textAlign: 'left'}}>Name</th>
-					<th>Players</th>
-					<th></th>
-				</tr>
-			</thead>
-			<tbody>{props.list.map((lobby) => <LobbyRow key={lobby.id} {...lobby} onClick={props.onClick} />)}</tbody>
-			<tfoot></tfoot>
-		</table>
-	</div>);
-}
-
-const Actions = (props) => {
-
-	let onJoinClick;
-	const lobby = props.selection;
-
-	if (lobby)
-	{
-		if (lobby.maxPlayers === null || lobby.players.length < lobby.maxPlayers)
-		{
-			onJoinClick = props.onJoinClick.bind(null, props.selection.id);
-		}
-	}
-
-	return (<div>
-		<button onClick={props.onRefreshClick}>Refresh</button>
-		<button disabled={!onJoinClick} onClick={onJoinClick}>Join</button>
-		<button onClick={props.onCreateClick}>Create</button>
-	</div>);
 }
 
 class Browser extends React.Component {
@@ -78,7 +41,7 @@ class Browser extends React.Component {
 		}
 	}
 
-	handleLobbyClick(id, event)
+	onLobbyClick(id, event)
 	{
 		const lobbies = this.state.lobbies.map(l => {
 			const wasActive = l.active;
@@ -90,6 +53,11 @@ class Browser extends React.Component {
 		{
 			const lobby = lobbies[index];
 			lobbies[index] = { ...lobby, active: !lobby.wasActive }
+			this.props.onSelect(lobby);
+		}
+		else
+		{
+			this.props.onSelect(null);
 		}
 		this.setState({ lobbies });
 	}
@@ -98,47 +66,19 @@ class Browser extends React.Component {
 	{
 		const selection = this.state.lobbies.find(l => l.active === true);
 
-		const clickHandlers = {
-			onRefreshClick: () => this.fetchLobbies(),
-			onJoinClick: (id) => this.handleJoinClick(),
-			onCreateClick: () => this.handleCreateClick(),
-		}
-
-		return (<>
-			<h1>Lobby Browser</h1>
-			<LobbyList list={this.state.lobbies} onClick={this.handleLobbyClick.bind(this)} />
-			<Actions selection={selection ? selection : null} {...clickHandlers} />
-		</>);
-	}
-
-	handleJoinClick()
-	{
-		const lobby = this.state.lobbies.find(l => l.active === true);
-
-		if (lobby)
-		{
-			navigate('/Lobby/' + encodeURIComponent(lobby.id));
-		}
-	}
-
-	handleCreateClick()
-	{
-		return fetch('/api/lobby/', { method: 'post', headers: { 'X-USER-ID': this.props.userId } })
-		.then((response) => {
-			// this.request = null;
-
-			if (response.ok)
-			{
-				response.json().then(lobby => {
-					const lobbies = [...this.state.lobbies];
-					lobbies.push(lobby);
-					this.setState({ lobbies: lobbies });
-
-					// move the player into thier lobby
-					navigate('/Lobby/' + encodeURIComponent(lobby.id));
-				});
-			}
-		});
+		return (<div className="lobby-list">
+			<table className="">
+				<thead>
+					<tr>
+						<th style={{textAlign: 'left'}}>Name</th>
+						<th>Players</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>{this.state.lobbies.map((lobby) => <LobbyRow key={lobby.id} {...lobby} onClick={this.onLobbyClick.bind(this)} />)}</tbody>
+				<tfoot></tfoot>
+			</table>
+		</div>);
 	}
 
 	register()

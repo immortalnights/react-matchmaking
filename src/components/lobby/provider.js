@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { navigate } from 'hookrouter';
-import Context from './context.js';
+import Context from './context';
 import io from 'socket.io-client';
-// import { initSockets } from './socket';
 
-class SocketProvider extends React.Component
-{
+class SocketProvider extends React.Component {
 	constructor(props)
 	{
 		super(props);
@@ -61,7 +58,7 @@ class SocketProvider extends React.Component
 		});
 
 		this.socket.on('lobby:game', game => {
-			navigate('/Game/' + game.id);
+			props.onGameReady(game.id);
 		});
 
 		this.socket.on('lobby:player:left', player => {
@@ -80,7 +77,6 @@ class SocketProvider extends React.Component
 			});
 		});
 
-		console.log("binding");
 		this.socket.on('message', ({ id }) => {
 			console.log("received message", Date(), id);
 		});
@@ -109,8 +105,6 @@ class SocketProvider extends React.Component
 
 	render()
 	{
-		console.log("Render provider!");
-
 		return (
 			<Context.Provider value={ this.state }>
 				{ this.props.children }

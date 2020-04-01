@@ -11,7 +11,12 @@ const PRETTIFY_JSON_RESPONSES = true;
 module.exports = class Server {
 	constructor(options)
 	{
-		this.createGame = (options && options.createGame) ? options.createGame : () => {};
+		if (!options || options.createGame)
+		{
+			console.error("Missing createGame callback");
+		}
+
+		this.createGame = (options && options.createGame) ? options.createGame : () => { console.error("Game has not been specified"); };
 		this.lobbies = [];
 		this.games = [];
 	}

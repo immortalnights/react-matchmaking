@@ -2,12 +2,23 @@ import React from 'react';
 import { withLoader } from '../../utilities/withloader';
 import Context from './context';
 import Provider from './provider';
-import io from 'socket.io-client';
 
 class Game extends React.Component {
+	static contextType = Context
+
 	render()
 	{
-		return (<h1>In game</h1>);
+		let content;
+		if (this.context.game)
+		{
+			content = (<div>{this.props.children(this.context.game, this.context.emit)}</div>);
+		}
+		else
+		{
+			content = (<div>Loading game...</div>);
+		}
+
+		return content;
 	}
 }
 
