@@ -14,8 +14,10 @@ module.exports = class TurnBasedGame extends Game {
 		return this.players[this.turn];
 	}
 
-	nextTurn(currentTurn)
+	nextTurn()
 	{
+		let currentTurn = this.turn;
+
 		if (!currentTurn)
 		{
 			currentTurn = 0;
@@ -33,6 +35,8 @@ module.exports = class TurnBasedGame extends Game {
 			// console.debug(currentTurn);
 		}
 
+		this.turn = currentTurn;
+		console.log(`It is now player ${this.whichPlayer().id} turn`)
 		return currentTurn;
 	}
 

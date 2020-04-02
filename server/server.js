@@ -79,7 +79,7 @@ module.exports = class Server {
 				const createGame = ({ lobby }) => {
 					console.assert(lobby);
 
-					const options = { io, players: lobby.players.map(p => p.id), host: lobby.host, closeGame: () => {} }
+					const options = { io, players: lobby.players.map(p => p), host: lobby.host, closeGame: () => {} }
 					const game = this.createGame(options);
 					if (game)
 					{

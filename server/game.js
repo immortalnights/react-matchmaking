@@ -7,7 +7,7 @@ module.exports = class Game {
 		this.io = io.of('/game');
 		this.id = uuid();
 		this.name = name;
-		this.authorizedPlayers = players;
+		this.authorizedPlayers = players.map(p => p.id);
 		this.players = [];
 		this.maxPlayers = players.length;
 		this.host = host;
@@ -15,6 +15,22 @@ module.exports = class Game {
 		this.callbacks = {
 			closeGame: closeGame
 		};
+
+		players.forEach(p => {
+			const ok = p.artifical && this.isAuthorized(p);
+			if (ok)
+			{
+				this.handleJoin(p);
+				console.log(`AI Player ${p.id} has joined the game`);
+				this.players.append(p);
+			}
+			else
+			{
+				console.debug(`Waiting for player ${p.id} to join`);
+			}
+
+			return ok;
+		});
 
 		console.log(`Game ${this.id} initialized`);
 	}
@@ -46,10 +62,15 @@ module.exports = class Game {
 
 			if (this.authorizedPlayers.length === this.players.length)
 			{
+				console.log(`All players have joined the game`);
 				setTimeout(() => {
 					this.status = 'PLAYING';
 					this.begin();
 				});
+			}
+			else
+			{
+				console.log(`Waiting for ${this.authorizedPlayers.length - this.players.length} more player(s)`);
 			}
 		}
 		else
