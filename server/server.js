@@ -83,6 +83,7 @@ module.exports = class Server {
 					const game = this.createGame(options);
 					if (game)
 					{
+						game.initializeAIPlayers(lobby.players);
 						this.games.push(game);
 					}
 					return game;
@@ -271,27 +272,7 @@ module.exports = class Server {
 
 			if (game)
 			{
-				const player = new Player({ id: userID, client });
-				// inform the player who they are
-				player.send('game:registered', player.serialize());
-
-				game.handleJoin(player);
-
-				// player.on('game:addAIOpponent', () => {
-				// 	if (game.host !== player.id)
-				// 	{
-				// 		console.error(`Player ${player.id} tried to add an AI player, but is not the host`);
-				// 	}
-				// 	else if (game.isFull())
-				// 	{
-				// 		console.error(`Cannot add AI player, game is full`);
-				// 	}
-				// 	else
-				// 	{
-				// 		const ai = new AI();
-				// 		game.handleJoin(ai);
-				// 	}
-				// });
+				const player = game.handleHumanJoin({ id: userID, client });
 
 				player.on('error', (client) => {
 					console.error("Client socket error!");
@@ -302,10 +283,17 @@ module.exports = class Server {
 
 					console.log(`client '${client.id}' disconnected from game channel`);
 				});
+
+				if (game.isReady())
+				{
+					setTimeout(() => {
+						game.begin();
+					});
+				}
 			}
 			else
 			{
-				throw new Error("Cannot connect to game");
+				throw new Error("Cannot connect to game (not found)");
 			}
 		});
 

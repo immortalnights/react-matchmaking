@@ -3,6 +3,7 @@ const uuid = require('uuid').v1;
 module.exports = class Player {
 	constructor({ id, client })
 	{
+		console.log(id, !!client);
 		this.id = id;
 		this.io = client;
 		this.ready = false;
@@ -10,22 +11,12 @@ module.exports = class Player {
 
 	on(name, callback)
 	{
-		let r;
-		if (this.io)
-		{
-			r = this.io.on(name, callback);
-		}
-		return r;
+		return this.io.on(name, callback);
 	}
 
 	send(name, data)
 	{
-		let r;
-		if (this.io)
-		{
-			r = this.io.emit(name, data);
-		}
-		return r;
+		return this.io.emit(name, data);
 	}
 
 	serialize()

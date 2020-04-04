@@ -1,4 +1,6 @@
 const uuid = require('uuid').v1;
+const Player = require('./player');
+const AI = require('./ai');
 
 module.exports = class Game {
 	constructor({ io, name, players, host, closeGame })
@@ -16,13 +18,26 @@ module.exports = class Game {
 			closeGame: closeGame
 		};
 
+		console.log(`Game ${this.id} initialized (${this.players.length})`);
+	}
+
+	initializeAIPlayers(players)
+	{
+		console.log(`AI players are joining the game`);
 		players.forEach(p => {
-			const ok = p.artifical && this.isAuthorized(p);
-			if (ok)
+			let ok = false;
+			if (p.artifical)
 			{
-				this.handleJoin(p);
-				console.log(`AI Player ${p.id} has joined the game`);
-				this.players.append(p);
+				if (this.isAuthorized(p.id))
+				{
+					const ai = this.handleAIJoin(p);
+					console.log(`AI Player ${ai.id} has joined the game`);
+					ok = true;
+				}
+				else
+				{
+					console.error(`AI Player ${p.id} is not authorized`);
+				}
 			}
 			else
 			{
@@ -31,8 +46,7 @@ module.exports = class Game {
 
 			return ok;
 		});
-
-		console.log(`Game ${this.id} initialized`);
+		console.log(`${this.players.length} AI players have joined`);
 	}
 
 	isEmpty()
@@ -42,41 +56,62 @@ module.exports = class Game {
 
 	isAuthorized(playerId)
 	{
+		console.log(`${playerId}, ${this.players.length} / ${this.maxPlayers} [${this.authorizedPlayers}]`);
 		return (this.players.length < this.maxPlayers) && !!this.authorizedPlayers.find(id => id === playerId);
+	}
+
+	isReady()
+	{
+		let ready = false;
+		if (this.authorizedPlayers.length === this.players.length)
+		{
+			console.log(`All players have joined the game`);
+			ready = true;
+		}
+		else
+		{
+			console.log(`Waiting for ${this.authorizedPlayers.length - this.players.length} more player(s)`);
+		}
+
+		return ready;
+	}
+
+	// override to create game specialized player
+	handleHumanJoin(details)
+	{
+		const player = new Player(details);
+		this.handleJoin(player);
+		return player;
+	}
+
+	// override to create game specialized AI
+	handleAIJoin(details)
+	{
+		const player = new AI({ id: details.id });
+		this.handleJoin(player);
+		return player;
 	}
 
 	handleJoin(player)
 	{
-		if (this.isAuthorized(player.id))
-		{
-			player.status = 'READY';
-			this.broadcast('game:player:joined', player.serialize());
+		console.assert(player instanceof Player, "Invalid player class");
 
-			// join the socket room
-			player.io.join(this.id);
-			this.players.push(player);
+		player.status = 'READY';
+		this.broadcast('game:player:joined', player.serialize());
 
-			player.send('game:update', this.serialize());
+		// join the socket room
+		player.io.join(this.id);
+		this.players.push(player);
 
-			console.log(`Player ${player.id} joined game ${this.id}`);
+		player.send('game:update', this.serialize());
 
-			if (this.authorizedPlayers.length === this.players.length)
-			{
-				console.log(`All players have joined the game`);
-				setTimeout(() => {
-					this.status = 'PLAYING';
-					this.begin();
-				});
-			}
-			else
-			{
-				console.log(`Waiting for ${this.authorizedPlayers.length - this.players.length} more player(s)`);
-			}
-		}
-		else
-		{
-			console.error(`Player ${player.id} is not authorized to join this game ${this.id}`);
-		}
+		console.log(`Player ${player.id} joined game ${this.id}`);
+	}
+
+	begin()
+	{
+		this.status = 'PLAYING';
+		this.broadcast('game:update', this.serialize());
 	}
 
 	handleLeave(playerId)
@@ -109,7 +144,16 @@ module.exports = class Game {
 
 	broadcast(name, data)
 	{
+		// Sends to all human players (shoud AI have a socket too?)
 		this.io.to(this.id).emit(name, data);
+
+		// AI players do not receive broadcast messages :(
+		this.players.forEach(p => {
+			if (p.artifical)
+			{
+				p.send(name, data);
+			}
+		})
 	}
 
 	serialize()

@@ -17,14 +17,16 @@ module.exports = class TurnBasedGame extends Game {
 	nextTurn()
 	{
 		let currentTurn = this.turn;
+		console.log("current player turn", currentTurn)
 
-		if (!currentTurn)
+		if (currentTurn === undefined)
 		{
 			currentTurn = 0;
+			console.debug("new player turn", currentTurn);
 		}
 		else
 		{
-			// console.debug(currentTurn, this.players.length);
+			console.debug(currentTurn, this.players.length);
 
 			++currentTurn;
 			if (currentTurn >= this.players.length)
@@ -32,7 +34,7 @@ module.exports = class TurnBasedGame extends Game {
 				currentTurn = 0;
 			}
 
-			// console.debug(currentTurn);
+			console.debug("new player turn", currentTurn);
 		}
 
 		this.turn = currentTurn;
