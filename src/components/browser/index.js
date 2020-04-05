@@ -1,11 +1,11 @@
 import React from 'react';
 import { withLoader } from '../../utilities/withloader';
-import './browser.css';
+import './styles.css';
 
 const LobbyRow = (props) => {
 	const playerCount = props.maxPlayers === null ? props.players.length : props.players.length + '/' + props.maxPlayers;
 
-	return (<tr className={props.active ? 'active' : ''} onClick={props.onClick.bind(null, props.id)}>
+	return (<tr className={props.active ? 'active' : ''} onClick={props.onClick.bind(null, props.id)} onDoubleClick={props.onDblClick.bind(null, props.id)} >
 		<td style={{textAlign: 'left'}}>{props.name}</td>
 		<td>{playerCount}</td>
 		<td>{props.status}</td>
@@ -72,10 +72,10 @@ class Browser extends React.Component {
 					<tr>
 						<th style={{textAlign: 'left'}}>Name</th>
 						<th>Players</th>
-						<th></th>
+						<th>Status</th>
 					</tr>
 				</thead>
-				<tbody>{this.state.lobbies.map((lobby) => <LobbyRow key={lobby.id} {...lobby} onClick={this.onLobbyClick.bind(this)} />)}</tbody>
+				<tbody>{this.state.lobbies.map((lobby) => <LobbyRow key={lobby.id} {...lobby} onClick={this.onLobbyClick.bind(this)} onDblClick={this.props.handleJoin} />)}</tbody>
 				<tfoot></tfoot>
 			</table>
 		</div>);
@@ -83,8 +83,7 @@ class Browser extends React.Component {
 
 	register()
 	{
-		let r;
-		return fetch('/api/lobby/', { method: 'POST', })
+		return fetch('/api/lobby/', { method: 'POST', });
 	}
 
 	fetchLobbies()

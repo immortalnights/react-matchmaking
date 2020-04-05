@@ -2,21 +2,20 @@ import React from 'react';
 
 const Actions = (props) => {
 
-	let onJoinClick;
+	let handleJoinClick;
 	const lobby = props.selection;
 
 	if (lobby)
 	{
 		if (lobby.maxPlayers === null || lobby.players.length < lobby.maxPlayers)
 		{
-			onJoinClick = props.onJoinClick.bind(null, props.selection.id);
+			handleJoinClick = props.handleJoinClick.bind(null, props.selection.id);
 		}
 	}
 
-	return (<div>
-		<button onClick={props.onRefreshClick}>Refresh</button>
-		<button disabled={!onJoinClick} onClick={onJoinClick}>Join</button>
-		<button onClick={props.onCreateClick}>Create</button>
+	return (<div className="action-bar">
+		<button onClick={props.handleCreateClick}>Create</button>
+		<button disabled={!handleJoinClick} onClick={handleJoinClick}>Join</button>
 	</div>);
 };
 
