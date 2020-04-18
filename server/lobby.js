@@ -1,4 +1,6 @@
 const uuid = require('uuid').v1;
+const _ = require('underscore');
+const { TeamFlags } = require('./common.js');
 
 module.exports = class Lobby {
 	constructor({ io, host, createGame, closeLobby })
@@ -7,13 +9,18 @@ module.exports = class Lobby {
 		this.io = io.of('/lobby');
 		this.id = uuid();
 		this.name = 'unnamed';
+		this.status = 'PENDING';
+
 		this.players = [];
 		this.maxPlayers = 2;
 		this.host = host;
-		this.status = 'PENDING';
+
+		this.teamFlags = TeamFlags.None;
+		this.teams = [];
+
 		this.countdown = 0;
 		this.timeout = null;
-		this.gameId = undefined;
+		// this.gameId = undefined;
 		this.callbacks = {
 			createGame: createGame,
 			closeLobby: closeLobby
@@ -47,9 +54,48 @@ module.exports = class Lobby {
 		// join the socket room
 		player.io.join(this.id);
 
+		if ((this.teamFlags & TeamFlags.Required) == TeamFlags.Required)
+		{
+			const definedTeams = _.isEmpty(this.teams) === false;
+			console.assert(definedTeams, "Player teams must be defined for 'Required' team play");
+			if (definedTeams)
+			{
+				// Place the new player into the first available team
+				const availableTeam = this.teams.find(t => {
+					let ok = false;
+
+					// If the team has no max players
+					if (t.maxPlayers === null)
+					{
+						ok = true;
+					}
+					else
+					{
+						const members = this.players.filter(p => {
+							return p.team === t.id;
+						});
+
+						ok = members.length < t.maxPlayers;
+					}
+
+					return ok;
+				});
+
+				if (availableTeam)
+				{
+					console.log(`Player ${player.id} has jointed team ${availableTeam.id}`);
+					player.team = availableTeam.id;
+				}
+				else
+				{
+					console.error("Failed to find free team for player", player.id);
+				}
+			}
+		}
+
 		this.players.push(player);
 
-		player.send('lobby:update', this.serialize());
+		this.broadcast('lobby:update', this.serialize());
 		console.log(`Player ${player.id} joined lobby ${this.id}`);
 	}
 
@@ -181,8 +227,8 @@ module.exports = class Lobby {
 			maxPlayers: this.maxPlayers,
 			host: this.host,
 			status: this.status,
-			countdown: this.countdown,
-			gameId: this.gameId
+			countdown: this.countdown
+			// gameId: this.gameId
 		};
 	}
 }

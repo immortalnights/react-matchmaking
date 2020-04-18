@@ -14,8 +14,8 @@ const Actions = (props) => {
 	}
 
 	return (<div className="action-bar">
-		<button onClick={props.handleCreateClick}>Create</button>
-		<button disabled={!handleJoinClick} onClick={handleJoinClick}>Join</button>
+		<button className="default" onClick={props.handleCreateClick}>Create</button>
+		<button className="primary" disabled={!handleJoinClick} onClick={handleJoinClick}>Join</button>
 	</div>);
 };
 

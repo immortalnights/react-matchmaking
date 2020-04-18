@@ -6,6 +6,7 @@ module.exports = class Player {
 		console.log(id, !!client);
 		this.id = id;
 		this.io = client;
+		this.team = null;
 		this.ready = false;
 	}
 
@@ -23,6 +24,7 @@ module.exports = class Player {
 	{
 		return {
 			id: this.id,
+			team: this.team,
 			ready: this.ready
 		};
 	}

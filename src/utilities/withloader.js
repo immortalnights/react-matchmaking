@@ -35,7 +35,7 @@ export const withLoader = (WrapperComponent, makeRequest) => {
 			{
 				case 'LOADING':
 				{
-					content = (<h1>Connecting...</h1>);
+					content = (<div className="status-message information"><h2>Connecting...</h2></div>);
 					break;
 				}
 				case 'OK':
@@ -46,9 +46,9 @@ export const withLoader = (WrapperComponent, makeRequest) => {
 				case 'ERROR':
 				default:
 				{
-					content = (<div>
-						<h1>Error</h1>
-						<h2>{this.state.error}</h2>
+					content = (<div className="status-message error">
+						<h2>Error</h2>
+						<h3>{this.state.error}</h3>
 						<A href="/">Return</A>
 					</div>);
 					break;

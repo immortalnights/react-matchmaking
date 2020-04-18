@@ -1,6 +1,17 @@
-.lobby-list table {
-	width: 100%;
-	margin: 0;
-	border-spacing: 0;
-	border-collapse: collapse;
+.lobby-list {
+	border-bottom: 1px solid darkgray;
+	flex-basis: 75%;
+}
+
+tbody tr.active {
+	background-color: lightblue;
+}
+
+.action-bar {
+	display: flex;
+	justify-content: space-between;
+}
+
+.action-bar button {
+	flex-grow: 0;
 }

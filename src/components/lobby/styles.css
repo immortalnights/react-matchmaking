@@ -1,0 +1,39 @@
+.lobby {
+	display: flex;
+	flex-direction: column;
+}
+
+.lobby > * {
+	flex: 1 1;
+}
+
+.lobby-player-list {
+	padding: 0;
+	margin: 0;
+	flex-basis: 10%;
+}
+
+.lobby-player-list li {
+	list-style: none;
+}
+
+.lobby-player {
+	display: flex;
+	justify-content: space-around;
+}
+
+.lobby-player-kick {
+	min-width: 5em;
+}
+.lobby-player-kick button {
+	width: 100%;
+}
+
+.lobby-status {
+	text-align: center;
+	flex-grow: 0;
+}
+
+.lobby-action-bar {
+	text-align: center;
+}

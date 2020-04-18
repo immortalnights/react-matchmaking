@@ -1,24 +1,10 @@
 import React, { useContext } from 'react';
+import { A } from 'hookrouter';
 import { withLoader } from '../../utilities/withloader';
 import Context from './context';
 import Provider from './provider';
-
-const PlayerListItem = (props) => {
-	console.log(props);
-	const readyState = props.ready ? "Ready" : "Not Ready";
-
-	let onClickKick;
-	if (props.isHost && props.id !== props.host)
-	{
-		onClickKick = props.onCick.bind(null, props.id);
-	}
-
-	return (<div>{props.id} ({props.index}) - {readyState} - {onClickKick ? (<button onClick={onClickKick}>Kick</button>) : ''}</div>);
-}
-
-const PlayerList = (props) => {
-	return props.players.map((player, index) => (<PlayerListItem key={player.id} {...player} host={props.host} isHost={props.isHost} onCick={props.onCick} index={index+1} />));
-}
+import PlayerTable from './playertable';
+import './styles.css';
 
 class Lobby extends React.Component {
 	static contextType = Context
@@ -26,6 +12,7 @@ class Lobby extends React.Component {
 	render()
 	{
 		const state = this.context.state;
+		console.log("context", this.context);
 		console.log("props", this.props);
 		console.log("state", state);
 
@@ -34,14 +21,12 @@ class Lobby extends React.Component {
 		{
 			case 'CONNECTING':
 			{
-				content = (<h2>Connecting...</h2>);
+				content = (<div className="status-message information"><h2>Connecting...</h2><A href="/">Cancel</A></div>);
 				break;
 			}
 			case 'ERROR':
 			{
-				content = (<div>
-					<h2>{this.context.error}</h2>
-				</div>);
+				content = (<div className="status-message error"><h2>{this.context.error}</h2></div>);
 				break;
 			}
 			default:
@@ -52,22 +37,35 @@ class Lobby extends React.Component {
 				if (lobby.status === 'STARTING')
 				{
 					const seconds = (Math.ceil(lobby.countdown / 1000)).toFixed(0);
-					status = (<div>Starting in {seconds}...</div>);
+					status = `Starting in ${seconds}...`;
 				}
 				else
 				{
-					status = (<div>Waiting for players...</div>);
+					status = "Waiting for players...";
 				}
 
 				const host = this.context.lobby.host === this.props.userId;
 
-				content = (
-					<div>
-						<PlayerList players={lobby.players} host={this.context.lobby.host} isHost={host} onCick={this.onClickKick.bind(this)} />
-						<div>Status: {status}</div>
-						<div>
-							{(host) ? (<button name="ready" onClick={this.onClickAddAI.bind(this)}>Add AI</button>) : ''}
-							<button name="ready" onClick={this.onReadyClick.bind(this)}>Ready</button>
+				const playerListProps = {
+					player: this.props.userId,
+					players: lobby.players,
+					host: this.context.lobby.host,
+					isHost: host,
+					onCick: this.onClickKick.bind(this)
+				};
+
+				const PlayerDisplay = this.props.playerDisplay || PlayerTable;
+
+				content = (<div className="lobby">
+						<div className="players-container"><PlayerDisplay {...playerListProps} onSelectSlot={this.handleSelectSlot.bind(this)}/></div>
+						<div className="lobby-status">
+							<label>Status</label>
+							<div>{status}</div>
+						</div>
+						<div className="action-bar">
+							<A className="lobby-leave-button btn" href="/">Leave</A>
+							{(host) ? (<button className="lobby-add-ai-control" name="ready" onClick={this.onClickAddAI.bind(this)}>Add AI</button>) : ''}
+							<button className="lobby-ready-toggle primary" name="ready" onClick={this.onReadyClick.bind(this)}>Ready</button>
 						</div>
 					</div>
 				);
@@ -75,11 +73,7 @@ class Lobby extends React.Component {
 			}
 		}
 
-		return (
-			<div>
-				{content}
-			</div>
-		);
+		return content;
 	}
 
 	onReadyClick()
@@ -92,9 +86,16 @@ class Lobby extends React.Component {
 		this.context.emit('lobby:addAIOpponent');
 	}
 
+	handleSelectSlot(slot)
+	{
+		console.log("Slot selection not implemented");
+		this.context.emit('lobby:selectSlot', slot);
+	}
+
 	onClickKick(playerId)
 	{
-		console.log(playerId);
+		console.log("Kick not implemented");
+		this.context.emit('lobby:kickPlayer');
 	}
 };
 

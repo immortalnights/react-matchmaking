@@ -6,7 +6,7 @@ const LobbyRow = (props) => {
 	const playerCount = props.maxPlayers === null ? props.players.length : props.players.length + '/' + props.maxPlayers;
 
 	return (<tr className={props.active ? 'active' : ''} onClick={props.onClick.bind(null, props.id)} onDoubleClick={props.onDblClick.bind(null, props.id)} >
-		<td style={{textAlign: 'left'}}>{props.name}</td>
+		<td>{props.name}</td>
 		<td>{playerCount}</td>
 		<td>{props.status}</td>
 	</tr>);

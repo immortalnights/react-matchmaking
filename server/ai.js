@@ -40,10 +40,8 @@ module.exports = class AI extends Player {
 
 	serialize()
 	{
-		return {
-			id: this.id,
-			ready: this.ready,
-			artifical: this.artifical
-		};
+		const data = super.serialize();
+		data.artifical = this.artifical;
+		return data;
 	}
 }

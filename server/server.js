@@ -16,7 +16,8 @@ module.exports = class Server {
 			console.error("Missing createGame callback");
 		}
 
-		this.createGame = (options && options.createGame) ? options.createGame : () => { console.error("Game has not been specified"); };
+		this.createLobby = (options && options.createLobby) ? options.createLobby : options => { console.warn("Using default Lobby"); return new Lobby(options) };
+		this.createGame = (options && options.createGame) ? options.createGame : options => { console.error("Game has not been specified"); };
 		this.lobbies = [];
 		this.games = [];
 	}
@@ -98,7 +99,7 @@ module.exports = class Server {
 					}
 				};
 
-				const lobby = new Lobby({ io, host: userId, createGame, closeLobby: close });
+				const lobby = this.createLobby({ io, host: userId, createGame, closeLobby: close });
 
 				this.lobbies.push(lobby);
 
