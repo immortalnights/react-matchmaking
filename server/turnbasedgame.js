@@ -4,9 +4,21 @@ module.exports = class TurnBasedGame extends Game {
 	constructor(options)
 	{
 		super(options);
+		// index of which players turn it is
 		this.turn = undefined;
 
 		console.log(`TurnBasedGame ${this.id} initialized`);
+	}
+
+	begin()
+	{
+		super.begin();
+	}
+
+	end()
+	{
+		super.end();
+		this.turn = undefined;
 	}
 
 	whichPlayer()
@@ -17,28 +29,33 @@ module.exports = class TurnBasedGame extends Game {
 	nextTurn()
 	{
 		let currentTurn = this.turn;
-		console.log("current player turn", currentTurn)
 
-		if (currentTurn === undefined)
+		if (this.status === 'PLAYING')
 		{
-			currentTurn = 0;
-			console.debug("new player turn", currentTurn);
-		}
-		else
-		{
-			console.debug(currentTurn, this.players.length);
+			console.log("current player turn", currentTurn)
 
-			++currentTurn;
-			if (currentTurn >= this.players.length)
+			if (currentTurn === undefined)
 			{
 				currentTurn = 0;
+				console.debug("new player turn", currentTurn);
+			}
+			else
+			{
+				console.debug(currentTurn, this.players.length);
+
+				++currentTurn;
+				if (currentTurn >= this.players.length)
+				{
+					currentTurn = 0;
+				}
+
+				console.debug("new player turn", currentTurn);
 			}
 
-			console.debug("new player turn", currentTurn);
+			this.turn = currentTurn;
+			console.log(`It is now player ${this.whichPlayer().id} turn`)
 		}
 
-		this.turn = currentTurn;
-		console.log(`It is now player ${this.whichPlayer().id} turn`)
 		return currentTurn;
 	}
 

@@ -1,4 +1,3 @@
-const uuid = require('uuid').v1;
 const Player = require('./player');
 
 class AIEventIO
@@ -30,9 +29,9 @@ class AIEventIO
 
 
 module.exports = class AI extends Player {
-	constructor()
+	constructor(details)
 	{
-		super({ id: uuid(), client: null });
+		super({ ...details, io: null });
 		this.io = new AIEventIO();
 		this.artifical = true
 		this.ready = true;

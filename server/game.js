@@ -1,4 +1,5 @@
 const uuid = require('uuid').v1;
+const _ = require('underscore');
 const Player = require('./player');
 const AI = require('./ai');
 
@@ -9,7 +10,11 @@ module.exports = class Game {
 		this.io = io.of('/game');
 		this.id = uuid();
 		this.name = name;
-		this.authorizedPlayers = players.map(p => p.id);
+
+		this.humanPlayerClass = undefined;
+		this.computerPlayerClass = undefined;
+
+		this.authorizedPlayers = players.map(p => _.omit(p, 'io'));
 		this.players = [];
 		this.maxPlayers = players.length;
 		this.host = host;
@@ -56,8 +61,8 @@ module.exports = class Game {
 
 	isAuthorized(playerId)
 	{
-		console.log(`${playerId}, ${this.players.length} / ${this.maxPlayers} [${this.authorizedPlayers}]`);
-		return (this.players.length < this.maxPlayers) && !!this.authorizedPlayers.find(id => id === playerId);
+		console.log(`${playerId}, ${this.players.length} / ${this.maxPlayers} [${_.pluck(this.authorizedPlayers, 'id')}]`);
+		return (this.players.length < this.maxPlayers) && !!this.authorizedPlayers.find(auth => auth.id === playerId);
 	}
 
 	isReady()
@@ -79,7 +84,15 @@ module.exports = class Game {
 	// override to create game specialized player
 	handleHumanJoin(details)
 	{
-		const player = new Player(details);
+		console.log(`Human player ${details.id} is joining the game`);
+		const auth = this.authorizedPlayers.find(auth => auth.id === details.id);
+		console.log("auth", auth);
+		console.assert(auth, `Failed to find authorized player details for player ${details.id}`);
+		_.extend(details, auth);
+
+		const playerClass = this.humanPlayerClass || Player;
+
+		const player = new playerClass({ ...details, ref: this });
 		this.handleJoin(player);
 		return player;
 	}
@@ -87,13 +100,22 @@ module.exports = class Game {
 	// override to create game specialized AI
 	handleAIJoin(details)
 	{
-		const player = new AI({ id: details.id });
+		console.log(`AI player ${details.id} is joining the game`);
+		const auth = this.authorizedPlayers.find(auth => auth.id === details.id);
+		console.log("auth", auth);
+		console.assert(auth, `Failed to find authorized player details for player ${details.id}`);
+		_.extend(details, auth);
+
+		const computerClass = this.computerPlayerClass || AI;
+
+		const player = new computerClass({ ...details, ref: this });
 		this.handleJoin(player);
 		return player;
 	}
 
 	handleJoin(player)
 	{
+		console.log(`Player ${player.id} is joining the game`);
 		console.assert(player instanceof Player, "Invalid player class");
 
 		player.status = 'READY';
@@ -102,6 +124,11 @@ module.exports = class Game {
 		// join the socket room
 		player.io.join(this.id);
 		this.players.push(player);
+
+		if (this.onPlayerJoined)
+		{
+			this.onPlayerJoined(player);
+		}
 
 		player.send('game:update', this.serialize());
 
@@ -112,6 +139,11 @@ module.exports = class Game {
 	{
 		this.status = 'PLAYING';
 		this.broadcast('game:update', this.serialize());
+	}
+
+	end()
+	{
+		this.status = 'FINISHED';
 	}
 
 	handleLeave(playerId)

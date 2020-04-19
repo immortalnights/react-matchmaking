@@ -7,7 +7,7 @@ const TeamFlags = {
 	// All players must be in a team
 	Required:   0x02,
 	// Players cannot change teams during play
-	Fixed:      0x10
+	Locked:     0x10
 };
 
 module.exports = {

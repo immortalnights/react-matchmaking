@@ -51,13 +51,14 @@ class Lobby extends React.Component {
 					players: lobby.players,
 					host: this.context.lobby.host,
 					isHost: host,
-					onCick: this.onClickKick.bind(this)
+					onSelectSlot: this.handleSelectSlot.bind(this),
+					onKickPlayer: this.handleKickPlayer.bind(this)
 				};
 
 				const PlayerDisplay = this.props.playerDisplay || PlayerTable;
 
 				content = (<div className="lobby">
-						<div className="players-container"><PlayerDisplay {...playerListProps} onSelectSlot={this.handleSelectSlot.bind(this)}/></div>
+						<div className="players-container"><PlayerDisplay {...playerListProps} /></div>
 						<div className="lobby-status">
 							<label>Status</label>
 							<div>{status}</div>
@@ -86,16 +87,16 @@ class Lobby extends React.Component {
 		this.context.emit('lobby:addAIOpponent');
 	}
 
-	handleSelectSlot(slot)
+	handleSelectSlot(options)
 	{
-		console.log("Slot selection not implemented");
-		this.context.emit('lobby:selectSlot', slot);
+		console.log("handleSelectSlot", options);
+		this.context.emit('lobby:selectTeam', options);
 	}
 
-	onClickKick(playerId)
+	handleKickPlayer(options)
 	{
-		console.log("Kick not implemented");
-		this.context.emit('lobby:kickPlayer');
+		console.log("handleKickPlayer", options);
+		this.context.emit('lobby:kickPlayer', options);
 	}
 };
 

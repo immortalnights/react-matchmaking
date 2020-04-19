@@ -1,12 +1,12 @@
 const uuid = require('uuid').v1;
 
 module.exports = class Player {
-	constructor({ id, client })
+	constructor(options)
 	{
-		console.log(id, !!client);
-		this.id = id;
-		this.io = client;
-		this.team = null;
+		console.log("BasePlayer", Object.keys(options));
+		this.id = options.id;
+		this.io = options.io;
+		this.team = options.team;
 		this.ready = false;
 	}
 

@@ -172,7 +172,7 @@ module.exports = class Server {
 
 			if (lobby)
 			{
-				const player = new Player({ id: userID, client });
+				const player = new Player({ id: userID, io: client });
 				// inform the player who they are
 				player.send('lobby:registered', player.serialize());
 
@@ -191,28 +191,19 @@ module.exports = class Server {
 						}
 						else
 						{
-							const ai = new AI();
+							const ai = new AI({ id: uuid() });
 							lobby.handleJoin(ai);
 						}
 					});
 
-					player.on('lobby:removeAIOpponent', () => {
-						// if (lobby.host !== player.id)
-						// {
-						// 	console.error(`Player ${player.id} tried to add an AI player, but is not the host`);
-						// }
-						// else if (lobby.isFull())
-						// {
-						// 	console.error(`Cannot add AI player, lobby is full`);
-						// }
-						// else
-						// {
-						// 	const ai = new AI();
-						// 	lobby.handleJoin(ai);
-						// }
+					player.on('lobby:kickPlayer', ({ playerId }) => {
+						lobby.kickPlayer(playerId);
+					});
+
+					player.on('lobby:selectTeam', ({ team, playerId }) => {
+						lobby.changeTeam(playerId, team);
 					});
 				}
-
 				player.on('lobby:toggleReady', () => {
 					lobby.toggleReady(player.id);
 				});
@@ -273,7 +264,7 @@ module.exports = class Server {
 
 			if (game)
 			{
-				const player = game.handleHumanJoin({ id: userID, client });
+				const player = game.handleHumanJoin({ id: userID, io: client });
 
 				player.on('error', (client) => {
 					console.error("Client socket error!");

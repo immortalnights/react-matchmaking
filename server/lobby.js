@@ -49,12 +49,12 @@ module.exports = class Lobby {
 
 	handleJoin(player)
 	{
-		this.broadcast('lobby:player:joined', player.serialize());
+		// this.broadcast('lobby:player:joined', player.serialize());
 
 		// join the socket room
 		player.io.join(this.id);
 
-		if ((this.teamFlags & TeamFlags.Required) == TeamFlags.Required)
+		if ((this.teamFlags & TeamFlags.Required) === TeamFlags.Required)
 		{
 			const definedTeams = _.isEmpty(this.teams) === false;
 			console.assert(definedTeams, "Player teams must be defined for 'Required' team play");
@@ -124,6 +124,55 @@ module.exports = class Lobby {
 		{
 			this.status = 'CLOSING';
 			this.callbacks.closeLobby();
+		}
+	}
+
+	kickPlayer(playerId)
+	{
+		this.handleLeave(playerId);
+	}
+
+	changeTeam(playerId, teamId)
+	{
+		console.log(playerId, teamId);
+		const player = this.players.find(p => p.id === playerId);
+		const team = this.teams.find(t => t.id === teamId);
+
+		if (_.isEmpty(this.teams))
+		{
+			console.error("Lobby has no defined teams");
+		}
+		else if (!player)
+		{
+			console.error(`Player ${playerId} does not exist`);
+		}
+		else if (!team)
+		{
+			console.error(`Selected team ${teamId} does not exist`);
+		}
+		else
+		{
+			// If the team can only have one player, assume swapping teams
+			if (team.maxPlayers === 1)
+			{
+				const otherTeamPlayer = this.players.find(p => p.team === team.id);
+				if (otherTeamPlayer)
+				{
+					otherTeamPlayer.team = player.team;
+					console.log(`Player ${otherTeamPlayer.id} has joined team ${player.team}`);
+				}
+
+				player.team = team.id;
+				console.log(`Player ${player.id} has joined team ${team.id}`);
+			}
+			else
+			{
+				// FIX ME - implement maxPlayers properly
+				player.team = team.id;
+				console.log(`Player ${player.id} has joined team ${team.id}`);
+			}
+
+			this.broadcast('lobby:update', this.serialize());
 		}
 	}
 
