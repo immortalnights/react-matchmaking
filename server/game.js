@@ -11,8 +11,8 @@ module.exports = class Game {
 		this.id = uuid();
 		this.name = name;
 
-		this.humanPlayerClass = undefined;
-		this.computerPlayerClass = undefined;
+		this.initHumanPlayer = options => new Player(options);
+		this.initComputerPlayer = options => new AI(options);
 
 		this.authorizedPlayers = players.map(p => _.omit(p, 'io'));
 		this.players = [];
@@ -86,13 +86,12 @@ module.exports = class Game {
 	{
 		console.log(`Human player ${details.id} is joining the game`);
 		const auth = this.authorizedPlayers.find(auth => auth.id === details.id);
-		console.log("auth", auth);
+		// console.log("auth", auth);
 		console.assert(auth, `Failed to find authorized player details for player ${details.id}`);
 		_.extend(details, auth);
 
-		const playerClass = this.humanPlayerClass || Player;
+		const player = this.initHumanPlayer({ ...details, game: this });
 
-		const player = new playerClass({ ...details, ref: this });
 		this.handleJoin(player);
 		return player;
 	}
@@ -102,13 +101,11 @@ module.exports = class Game {
 	{
 		console.log(`AI player ${details.id} is joining the game`);
 		const auth = this.authorizedPlayers.find(auth => auth.id === details.id);
-		console.log("auth", auth);
+		// console.log("auth", auth);
 		console.assert(auth, `Failed to find authorized player details for player ${details.id}`);
 		_.extend(details, auth);
 
-		const computerClass = this.computerPlayerClass || AI;
-
-		const player = new computerClass({ ...details, ref: this });
+		const player = this.initComputerPlayer({ ...details, game: this });
 		this.handleJoin(player);
 		return player;
 	}
