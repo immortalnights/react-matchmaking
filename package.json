@@ -55,12 +55,7 @@
     "rollup-plugin-node-resolve": "^3.3.0",
     "rollup-plugin-peer-deps-external": "^2.2.0",
     "rollup-plugin-postcss": "^1.6.2",
-    "rollup-plugin-url": "^1.4.0",
-    "node-env-run": "^3.0.2",
-    "nodemon": "^2.0.2",
-    "npm-run-all": "^4.1.5",
-    "express": "^4.17.1",
-    "socket.io": "^2.3.0"
+    "rollup-plugin-url": "^1.4.0"
   },
   "files": [
     "dist"
