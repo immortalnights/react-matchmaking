@@ -43,7 +43,6 @@ thead tr th {
 }
 
 tbody tr {
-	cursor: pointer;
 	user-select: none;
 }
 
