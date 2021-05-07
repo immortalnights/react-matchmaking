@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "socket.io-client": "^2.3.0",
-    "underscore": "^1.10.2"
+    "underscore": "^1.12.1"
   },
   "peerDependencies": {
     "prop-types": "^15.5.4",
